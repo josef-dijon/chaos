@@ -25,6 +25,7 @@ The [Architecture Specification](docs/architecture.md) is the **single source of
     - **Tools:** `pytest` and `pytest-cov` (or `pycov`).
     - **Coverage Mandate:** Maintain at least **95% test coverage**.
     - **Testability Driver:** Use the coverage requirement to drive architecture. If code is difficult to test, break it down into smaller chunks, functions, or sub-classes.
+    - **LLM Mocking:** For unit tests, always mock LLM calls using `unittest.mock` or `pytest-mock`. Avoid real network calls to ensure tests are fast, deterministic, and free. For integration tests, consider using `vcrpy` to record and replay real interactions.
     - **Pre-Commit:** Always run and fix tests before creating a commit.
 3.  **Planning Process:**
     - **Plan Before Code:** Never start implementing features without a plan.
