@@ -2,52 +2,73 @@
 
 [![Tests](https://github.com/josef-dijon/chaos/actions/workflows/test.yml/badge.svg)](https://github.com/josef-dijon/chaos/actions/workflows/test.yml)
 
-CHAOS is a framework for building self-improving, persistent digital entities using a dual-process theory of mind.
+CHAOS is a framework for building persistent, self-correcting AI agents. It implements a **Dual-Process Architecture** that separates active task execution from background reflection.
 
-## 🧠 Philosophy
+## 🧠 The Concept
 
-Human intelligence is not a single loop; it is a hierarchy. CHAOS implements this by splitting an Agent into two distinct processes:
+Most AI agents operate in a single continuous loop. CHAOS splits the cognitive load into two distinct processes:
 
-1.  **The Actor:** The task-oriented "conscious" mind. It executes tasks, uses tools, and interacts with the world.
-2.  **The Subconscious:** The background "hidden" mind. It reflects on the Actor's experiences, analyzes feedback, and patches the Actor's **Identity**.
+1.  **The Actor (System 1):** Fast, task-oriented execution. It focuses on using tools and solving the immediate problem using its current instructions.
+2.  **The Subconscious (System 2):** Slow, reflective optimization. It analyzes the Actor's logs and user feedback to update the agent's core configuration, effectively "patching" the agent's behavior over time.
 
-This architecture ensures that agents don't just perform tasks—they **learn and adapt** over time without human intervention in the core loop.
+While "Hierarchical" is in the name, it refers to **Meta-Cognitive Control** rather than a tree of workers. The Subconscious operates on a meta-layer, governing the parameters and identity of the Actor.
 
 ## ✨ Key Features
 
-- **Dual-Process Architecture:** Separation of execution (Actor) and reflection (Subconscious).
-- **Persistent Identity:** Agents are defined by an `Identity` (JSON), which includes their profile, core values, and mutable operational instructions.
-- **Modular Library System:**
-    - **Skills Library:** Reusable prompt patterns and behavioral instructions.
-    - **Knowledge Library:** RAG-based static reference material.
-    - **Tool Library:** Executable capabilities (CLI, MCP, etc.).
-- **Access Control:** The Identity can whitelist or blacklist specific Skills, Knowledge domains, or Tools to scope the agent's breadth.
-- **Cognitive Loop:** Built on **LangGraph**, providing a robust cyclic reasoning engine (`Recall` -> `Reason` -> `Act`).
-- **Memory Management:** Integrated Long-Term Memory (LTM via ChromaDB) and Short-Term Memory (STM via rolling buffer).
+- **Dual-Process Architecture:** An "Actor" for doing and a "Subconscious" for learning.
+- **Persistent Identity:** Agents are defined by a JSON-based `Identity` containing their role, values, and mutable operational instructions.
+- **Modular Libraries:**
+    - **Skills:** Reusable prompt patterns.
+    - **Knowledge:** RAG-based static reference material.
+    - **Tools:** Executable capabilities.
+- **Access Control:** The Identity acts as a permission scope, whitelisting/blacklisting specific libraries to constrain the Actor's focus.
+- **Memory:** Integrated Long-Term Memory (Vector DB) and Short-Term Memory (Context Buffer).
 
 ## 🏗 Architecture
 
+The system distinguishes between **Processes** (The Agents) and **State** (Memory, Identity, Libraries).
+
 ```mermaid
-graph TD
-    User((Architect)) -->|do/learn/dream| Agent
-    subgraph Agent
-        Actor[Actor: BasicAgent]
-        Subconscious[Subconscious: BasicAgent]
+flowchart TB
+    User((User))
+
+    subgraph "CHAOS Container"
+        direction TB
+        
+        subgraph "State Layer"
+            Identity[(Identity JSON)]
+            Memory[(Memory LTM/STM)]
+            
+            subgraph "Libraries"
+                direction LR
+                Tools[Tools]
+                Skills[Skills]
+                Know[Knowledge]
+            end
+        end
+
+        subgraph "Process Layer"
+            Actor[Actor Agent]
+            Sub[Subconscious Agent]
+        end
     end
-    
-    Actor -->|Record Memory| Memory[(MemoryContainer)]
-    Subconscious -->|Analyze| Memory
-    Subconscious -->|Patch| ID[Identity JSON]
-    ID -->|Define| Actor
-    
-    subgraph Libraries
-        Skills[Skills Library]
-        Know[Knowledge Library]
-        Tools[Tool Library]
-    end
-    
+
+    %% User Interaction
+    User -->|'do'| Actor
+    User -->|'learn'| Sub
+
+    %% Actor Workflow
+    Identity -.->|Configures| Actor
+    Actor <-->|Read/Write| Memory
     Actor -->|Filtered Access| Libraries
-    Subconscious -->|Full Access| Libraries
+
+    %% Subconscious Workflow
+    Sub -->|Analyze| Memory
+    Sub -->|Full Access| Libraries
+    Sub -->|Patch Instructions| Identity
+    
+    %% Implicit feedback loop
+    Identity -.->|Updates Behavior| Actor
 ```
 
 Detailed technical specifications can be found in [docs/architecture.md](docs/architecture.md).
@@ -68,11 +89,11 @@ uv sync
    ```bash
    uv run python -m agent_of_chaos.cli.main init
    ```
-2. **Execute a task:**
+2. **Execute a task (The Actor):**
    ```bash
    uv run python -m agent_of_chaos.cli.main do "Research the project structure"
    ```
-3. **Trigger a learning cycle:**
+3. **Trigger a learning cycle (The Subconscious):**
    ```bash
    uv run python -m agent_of_chaos.cli.main learn "You were too verbose in the last response."
    ```
