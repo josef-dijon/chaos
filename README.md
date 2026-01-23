@@ -1,6 +1,6 @@
 # CHAOS: Cognitive Hierarchical Adaptive OS
 
-[![Tests](https://github.com/josef/agent-of-chaos/actions/workflows/test.yml/badge.svg)](https://github.com/josef/agent-of-chaos/actions/workflows/test.yml)
+[![Tests](https://github.com/josef-dijon/chaos/actions/workflows/test.yml/badge.svg)](https://github.com/josef-dijon/chaos/actions/workflows/test.yml)
 
 CHAOS is a framework for building self-improving, persistent digital entities using a dual-process theory of mind.
 
