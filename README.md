@@ -4,7 +4,7 @@
 
 CHAOS is a framework for building persistent, self-correcting AI agents. It implements a **Dual-Process Architecture** that separates active task execution from background reflection.
 
-## 🧠 The Concept
+## The Concept
 
 Most AI agents operate in a single continuous loop. CHAOS splits the cognitive load into two distinct processes:
 
@@ -13,7 +13,7 @@ Most AI agents operate in a single continuous loop. CHAOS splits the cognitive l
 
 While "Hierarchical" is in the name, it refers to **Meta-Cognitive Control** rather than a tree of workers. The Subconscious operates on a meta-layer, governing the parameters and identity of the Actor.
 
-## ✨ Key Features
+## Key Features
 
 - **Dual-Process Architecture:** An "Actor" for doing and a "Subconscious" for learning.
 - **Persistent Identity:** Agents are defined by a JSON-based `Identity` containing their role, values, and mutable operational instructions.
@@ -24,7 +24,7 @@ While "Hierarchical" is in the name, it refers to **Meta-Cognitive Control** rat
 - **Access Control:** The Identity acts as a permission scope, whitelisting/blacklisting specific libraries to constrain the Actor's focus.
 - **Memory:** Integrated Long-Term Memory (Vector DB) and Short-Term Memory (Context Buffer).
 
-## 🏗 Architecture
+## Architecture
 
 The system distinguishes between **Processes** (The Agents) and **State** (Memory, Identity, Libraries).
 
@@ -73,7 +73,7 @@ flowchart TB
 
 Detailed technical specifications can be found in [docs/architecture.md](docs/architecture.md).
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Python 3.12+
@@ -98,6 +98,6 @@ uv sync
    uv run python -m agent_of_chaos.cli.main learn "You were too verbose in the last response."
    ```
 
-## 📜 Development Standards
+## Development Standards
 
 We follow strict development protocols to ensure high coverage and architectural integrity. See [AGENTS.md](AGENTS.md) for our contributor guide and workflow.
