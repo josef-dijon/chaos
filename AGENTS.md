@@ -32,6 +32,7 @@ The [Architecture Specification](docs/architecture.md) is the **single source of
         - Create a planning document in `docs/` with a `-plan.md` suffix.
         - Create a companion checklist file in `docs/` with a `-checklist.md` suffix.
     - **Tracking:** Mark checklist items as done as the plan is executed.
+    - **Completion:** Once a plan is completed, tested, and committed, rename the planning document to suffix it with `-complete.md` and delete the accompanying checklist file.
 
 ## Coding Standards
 
