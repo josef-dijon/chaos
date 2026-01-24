@@ -14,7 +14,7 @@
 - [x] Add centralized helper for memory paths (chroma + raw db) using `Config`.
 - [x] Update `src/agent_of_chaos/cli/main.py` to use centralized helpers.
 - [x] Update all modules with hardcoded `.chaos` values to use `Config` helpers.
-- [ ] Update `README.md` Python requirement to match `pyproject.toml`.
+- [x] Update `README.md` Python requirement to match `pyproject.toml`.
 
 ## Phase 2: Agent Pipeline Decomposition
 - [ ] Create `PromptBuilder` class with explicit inputs (identity, system prompts, context).

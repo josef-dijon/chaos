@@ -76,7 +76,7 @@ Detailed technical specifications can be found in [docs/architecture.md](docs/ar
 ## Getting Started
 
 ### Prerequisites
-- Python 3.12+
+- Python 3.13+
 - [uv](https://github.com/astral-sh/uv)
 
 ### Installation
