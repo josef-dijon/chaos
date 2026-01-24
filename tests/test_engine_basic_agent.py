@@ -2,6 +2,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch, call
 from agent_of_chaos.config import Config
+from agent_of_chaos.domain.skill import Skill
 from agent_of_chaos.engine.basic_agent import BasicAgent, AgentState
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage, SystemMessage
 
@@ -134,7 +135,7 @@ def test_reason_logic(mock_graph, mock_llm, mock_deps):
     mock_deps["identity"].tool_manifest = ["test_tool"]
     mock_deps["identity"].resolve_tool_whitelist.return_value = ["test_tool"]
     mock_deps["skills_lib"].list_skills.return_value = [
-        MagicMock(name="S1", content="How to test")
+        Skill(name="S1", description="", content="How to test")
     ]
 
     mock_tool = MagicMock()
@@ -180,7 +181,9 @@ def test_reason_logic(mock_graph, mock_llm, mock_deps):
     # 0: System Prompt
     assert isinstance(call_args[0], SystemMessage)
     assert "Identity: TestBot" in call_args[0].content
-    assert "Instructions:\n        Be precise" in call_args[0].content
+    assert "Core Instructions:" in call_args[0].content
+    assert "Be precise" in call_args[0].content
+    assert "Operational Notes" in call_args[0].content
 
     # 1: Context (inserted)
     assert isinstance(call_args[1], SystemMessage)

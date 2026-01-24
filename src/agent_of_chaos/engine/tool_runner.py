@@ -1,6 +1,6 @@
 """Tool execution utilities for agent loops."""
 
-from typing import Any, Dict, List
+from typing import Any, List, Mapping, Sequence
 
 from langchain_core.messages import ToolMessage
 
@@ -18,7 +18,7 @@ class ToolRunner:
     def __init__(self, tool_lib: ToolLibrary) -> None:
         self.tool_lib = tool_lib
 
-    def run(self, tool_calls: List[Dict[str, Any]]) -> List[ToolMessage]:
+    def run(self, tool_calls: Sequence[Mapping[str, Any]]) -> List[ToolMessage]:
         """
         Executes tool calls and returns tool messages.
 
