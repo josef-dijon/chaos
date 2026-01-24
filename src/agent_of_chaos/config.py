@@ -143,3 +143,15 @@ class Config(BaseModel):
             The CHAOS root directory path.
         """
         return self.chaos_dir
+
+    def get_identity_path(self, agent_id: str) -> Path:
+        """
+        Returns the identity file path for a given agent id.
+
+        Args:
+            agent_id: The unique agent identifier.
+
+        Returns:
+            The identity file path under the CHAOS identities directory.
+        """
+        return self.chaos_dir / "identities" / f"{agent_id}.identity.json"

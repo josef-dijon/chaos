@@ -75,3 +75,12 @@ def test_config_rejects_unknown_fields(tmp_path: Path) -> None:
 
     with pytest.raises(ValidationError):
         Config.load(path=config_path)
+
+
+def test_config_identity_path(tmp_path: Path) -> None:
+    """Builds identity paths under the CHAOS identities directory."""
+    config = Config(chaos_dir=tmp_path / ".chaos")
+
+    assert config.get_identity_path("agent") == (
+        tmp_path / ".chaos" / "identities" / "agent.identity.json"
+    )

@@ -10,7 +10,7 @@
 ## Phase 1: Configuration & Path Centralization
 - [x] Add a `ConfigProvider` (or factory) to construct `Config` without import-time side effects.
 - [x] Remove `settings = Config.load()` from module import paths.
-- [ ] Add centralized helper for identity file path: `.chaos/identities/<agent_id>.identity.json`.
+- [x] Add centralized helper for identity file path: `.chaos/identities/<agent_id>.identity.json`.
 - [ ] Add centralized helper for memory paths (chroma + raw db) using `Config`.
 - [ ] Update `src/agent_of_chaos/cli/main.py` to use centralized helpers.
 - [ ] Update all modules with hardcoded `.chaos` values to use `Config` helpers.
