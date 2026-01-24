@@ -34,7 +34,7 @@
 - [x] Add `RawMemoryStore.close()` and ensure it is called on shutdown.
 - [x] Wrap STM delete + insert inside an explicit transaction.
 - [x] Surface vector store upsert failures to callers or mark embed status for retry.
-- [ ] Add tests covering STM summarization bounds and tool-call memory retention.
+- [x] Add tests covering STM summarization bounds and tool-call memory retention.
 
 ## Phase 4: Tool Safety & IO Boundaries
 - [ ] Define config-driven allowed root for file tools (workspace or `.chaos`).
