@@ -96,6 +96,9 @@ Notes:
 - No `tool_call`, `tool_output`, or `feedback` kinds exist yet.
 - Idetic `visibility` is present in API, but tests only cover `actor` and `subconscious` values.
 
+## Memory Schema Impact (Phase 0 Decision)
+Decision: no schema migration is required. The SQLite schema already stores `kind` as free-form text and will accept new values (`tool_call`, `tool_output`, `feedback`) without structural changes. We will still add a domain enum to constrain allowed values and update tests to cover the expanded set.
+
 ### Phase 2: Agent Pipeline Decomposition
 Objective: Reduce responsibility load and improve testability of the agent execution loop.
 
