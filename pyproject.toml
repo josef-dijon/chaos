@@ -21,6 +21,12 @@ dev = [
     "pytest-cov>=7.0.0",
 ]
 
+[project.scripts]
+chaos = "agent_of_chaos.cli.main:app"
+
+[tool.uv]
+package = true
+
 [tool.pytest.ini_options]
 pythonpath = "src"
 testpaths = ["tests"]

@@ -29,6 +29,9 @@ venv/
 ENV/
 
 # Persistence
+.chaos/
+
+# Backwards compatibility (older layout)
 chroma_db/
 identity.json
 soul.json

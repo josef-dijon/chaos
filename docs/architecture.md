@@ -31,7 +31,7 @@ A BasicAgent is the functional implementation of an LLM loop. It is a "blank sla
   * memory: A MemoryContainer managing short-term and long-term data.  
   * skills_library: Access to the central repository of skills.
   * knowledge_library: Access to the central RAG knowledge base.
-  * graph: A LangGraph instance defining the specific agentic logic (e.g., a "Reasoning" loop vs. an "Optimization" loop).  
+  * graph: A LangGraph instance defining the specific agentic logic (e.g., a "Reasoning" loop vs. an "Optimization" loop). LangGraph is explicitly chosen over higher-level frameworks (e.g., CrewAI) to ensure granular traceability and deterministic control over the agent's state transitions.
   * tools: A list of Tool instances available for the agent to call.  
 * **Public API:**  
   * execute(input: str): Runs the LangGraph loop to process the input and return a response.  

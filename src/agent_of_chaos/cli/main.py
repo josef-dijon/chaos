@@ -5,14 +5,33 @@ from agent_of_chaos.core.agent import Agent
 
 app = typer.Typer()
 console = Console()
-IDENTITY_PATH = Path("identity.json")
+
+CHAOS_DIR = Path(".chaos")
+IDENTITIES_DIR = CHAOS_DIR / "identities"
+
+
+def _identity_path(agent_id: str) -> Path:
+    """Returns the path to an agent identity file."""
+
+    return IDENTITIES_DIR / f"{agent_id}.identity.json"
 
 
 @app.command()
-def init():
+def init(
+    agent: str = typer.Option(
+        "default",
+        "--agent",
+        "-a",
+        help="Agent id (stored as .chaos/identities/<agent>.identity.json).",
+    ),
+):
     """
     Initialize a new agent Identity in the current directory.
     """
+    IDENTITY_PATH = _identity_path(agent)
+
+    IDENTITIES_DIR.mkdir(parents=True, exist_ok=True)
+
     if IDENTITY_PATH.exists():
         console.print("[yellow]Identity already exists.[/yellow]")
         return
@@ -23,44 +42,70 @@ def init():
 
 
 @app.command()
-def do(task: str):
+def do(
+    task: str,
+    agent: str = typer.Option(
+        "default",
+        "--agent",
+        "-a",
+        help="Agent id (stored as .chaos/identities/<agent>.identity.json).",
+    ),
+):
     """
     Assign a task to the agent's Actor.
     """
     try:
-        agent = Agent(IDENTITY_PATH)
+        identity_path = _identity_path(agent)
+        agent_obj = Agent(identity_path)
         console.print(f"[bold green]Actor:[/bold green] working on '{task}'...")
-        response = agent.do(task)
+        response = agent_obj.do(task)
         console.print(f"[green]{response}[/green]")
     except Exception as e:
         console.print(f"[red]Error:[/red] {e}")
 
 
 @app.command()
-def learn(feedback: str):
+def learn(
+    feedback: str,
+    agent: str = typer.Option(
+        "default",
+        "--agent",
+        "-a",
+        help="Agent id (stored as .chaos/identities/<agent>.identity.json).",
+    ),
+):
     """
     Trigger the Subconscious to learn from recent logs and feedback.
     """
     try:
-        agent = Agent(IDENTITY_PATH)
+        identity_path = _identity_path(agent)
+        agent_obj = Agent(identity_path)
         console.print(
             f"[bold blue]Subconscious:[/bold blue] reflecting on '{feedback}'..."
         )
-        note = agent.learn(feedback)
+        note = agent_obj.learn(feedback)
         console.print(f"[blue]Learned:[/blue] {note}")
     except Exception as e:
         console.print(f"[red]Error:[/red] {e}")
 
 
 @app.command()
-def dream():
+def dream(
+    agent: str = typer.Option(
+        "default",
+        "--agent",
+        "-a",
+        help="Agent id (stored as .chaos/identities/<agent>.identity.json).",
+    ),
+):
     """
     Trigger the dreaming maintenance cycle.
     """
     try:
-        agent = Agent(IDENTITY_PATH)
+        identity_path = _identity_path(agent)
+        agent_obj = Agent(identity_path)
         console.print("[bold blue]Subconscious:[/bold blue] dreaming...")
-        result = agent.dream()
+        result = agent_obj.dream()
         console.print(f"[blue]{result}[/blue]")
     except Exception as e:
         console.print(f"[red]Error:[/red] {e}")

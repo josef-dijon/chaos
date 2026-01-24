@@ -9,7 +9,8 @@ class Config(BaseSettings):
     """
 
     openai_api_key: Optional[str] = None
-    chroma_db_path: Path = Path("./chroma_db")
+    # Local persistent Chroma storage. Kept project-local to avoid global state.
+    chroma_db_path: Path = Path(".chaos/memories")
     env: str = "dev"
     model_name: str = "gpt-4o"
 

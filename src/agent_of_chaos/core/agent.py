@@ -9,6 +9,21 @@ from agent_of_chaos.engine.basic_agent import BasicAgent
 DEFAULT_SUB_PATH = Path("src/agent_of_chaos/default_subconscious.json")
 
 
+def _agent_id_from_identity_path(identity_path: Path) -> str:
+    """Derives an agent id from an identity filename.
+
+    Expected format: `<agent_id>.identity.json`.
+    """
+
+    filename = identity_path.name
+    suffix = ".identity.json"
+    if filename.endswith(suffix):
+        return filename[: -len(suffix)]
+    if filename.endswith(".json"):
+        return filename[: -len(".json")]
+    return identity_path.stem
+
+
 class Agent:
     """
     The main Agent of CHAOS, orchestrating the Actor and Subconscious.
@@ -19,10 +34,11 @@ class Agent:
         if identity_path.exists():
             self.identity = Identity.load(identity_path)
         else:
+            agent_id = _agent_id_from_identity_path(identity_path)
             # Default template
             self.identity = Identity(
                 profile=Profile(
-                    name="Chaos",
+                    name=agent_id or "Chaos",
                     role="Assistant",
                     core_values=["Helpful", "Harmless", "Honest"],
                 ),

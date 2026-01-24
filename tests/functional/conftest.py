@@ -1,5 +1,4 @@
 import pytest
-import os
 from pathlib import Path
 from typer.testing import CliRunner
 from agent_of_chaos.config import settings
@@ -23,6 +22,6 @@ def workspace(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
 
     # Update settings to use the tmp_path for data
-    monkeypatch.setattr(settings, "chroma_db_path", tmp_path / "chroma_db")
+    monkeypatch.setattr(settings, "chroma_db_path", tmp_path / ".chaos" / "memories")
 
     return tmp_path

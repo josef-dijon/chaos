@@ -16,7 +16,9 @@ def test_learning_circuit(cli_runner, workspace):
     assert "Learned:" in result.output
 
     # 2. Verify identity.json was updated
-    identity_data = json.loads(Path("identity.json").read_text())
+    identity_data = json.loads(
+        (Path(".chaos") / "identities" / "default.identity.json").read_text()
+    )
     notes = identity_data["instructions"]["operational_notes"]
     assert len(notes) > 0
 
@@ -38,7 +40,3 @@ def test_learning_circuit(cli_runner, workspace):
     ]
     output_upper = result.output.upper()
     assert any(word in output_upper for word in pirate_indicators)
-
-    # Common pirate words
-    pirate_words = ["AHOY", "MATEY", "ARR", "YAR", "SCURVY", "SEA", "PIRATE"]
-    assert any(word in result.output.upper() for word in pirate_words)

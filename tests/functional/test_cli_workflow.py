@@ -7,7 +7,7 @@ def test_init_and_do_workflow(cli_runner, workspace):
     result = cli_runner.invoke(app, ["init"])
     assert result.exit_code == 0
     assert "Initialized new Chaos Agent identity" in result.output
-    assert Path("identity.json").exists()
+    assert (Path(".chaos") / "identities" / "default.identity.json").exists()
 
     # 2. Do (Write file)
     # Using a simple task to verify tool execution
