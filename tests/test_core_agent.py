@@ -2,6 +2,13 @@ import pytest
 from unittest.mock import MagicMock, patch, call, ANY
 from pathlib import Path
 from agent_of_chaos.core.agent import Agent
+from agent_of_chaos.infra.memory_container import (
+    EVENT_KIND_ACTOR_OUTPUT,
+    EVENT_KIND_TOOL_CALL,
+    EVENT_KIND_TOOL_OUTPUT,
+    EVENT_KIND_USER_INPUT,
+    VISIBILITY_EXTERNAL,
+)
 
 
 @pytest.fixture
@@ -112,23 +119,62 @@ def test_agent_do(mock_dependencies):
     with patch("pathlib.Path.exists", return_value=True):
         agent = Agent(Path("dummy"))
 
-    mock_actor.execute.return_value = "Task done"
+    mock_actor.execute_with_events.return_value = (
+        "Task done",
+        [
+            {
+                "kind": EVENT_KIND_TOOL_CALL,
+                "id": "t1",
+                "name": "read",
+                "args": {"path": "file"},
+            },
+            {
+                "kind": EVENT_KIND_TOOL_OUTPUT,
+                "id": "t1",
+                "name": "read",
+                "output": "content",
+            },
+        ],
+    )
 
     result = agent.do("clean up")
 
     mocks["mem"].return_value.record_event.assert_any_call(
         persona="actor",
         loop_id="loop-1",
-        kind="user_input",
-        visibility="external",
+        kind=EVENT_KIND_USER_INPUT,
+        visibility=VISIBILITY_EXTERNAL,
         content="clean up",
     )
-    mock_actor.execute.assert_called()
+    mock_actor.execute_with_events.assert_called()
     mocks["mem"].return_value.record_event.assert_any_call(
         persona="actor",
         loop_id="loop-1",
-        kind="actor_output",
-        visibility="external",
+        kind=EVENT_KIND_TOOL_CALL,
+        visibility=VISIBILITY_EXTERNAL,
+        content='read {"path": "file"}',
+        metadata={
+            "tool_name": "read",
+            "tool_args": {"path": "file"},
+            "tool_call_id": "t1",
+        },
+    )
+    mocks["mem"].return_value.record_event.assert_any_call(
+        persona="actor",
+        loop_id="loop-1",
+        kind=EVENT_KIND_TOOL_OUTPUT,
+        visibility=VISIBILITY_EXTERNAL,
+        content="content",
+        metadata={
+            "tool_name": "read",
+            "tool_call_id": "t1",
+        },
+    )
+    mocks["mem"].return_value.record_event.assert_any_call(
+        persona="actor",
+        loop_id="loop-1",
+        kind=EVENT_KIND_ACTOR_OUTPUT,
+        visibility=VISIBILITY_EXTERNAL,
         content="Task done",
     )
     mocks["mem"].return_value.finalize_loop.assert_called_once_with(

@@ -5,6 +5,7 @@ from langchain_core.messages import (
     BaseMessage,
     HumanMessage,
     AIMessage,
+    ToolMessage,
 )
 from langchain_openai import ChatOpenAI
 from agent_of_chaos.domain.identity import Identity
@@ -167,9 +168,48 @@ class BasicAgent:
         tool_results = self.tool_runner.run(last_message.tool_calls)
         return {"messages": tool_results}
 
-    def execute(self, task: str) -> str:
+    def _collect_tool_events(self, messages: List[BaseMessage]) -> List[Dict[str, Any]]:
         """
-        Executes a task through the agentic loop.
+        Collects tool call and output events from graph messages.
+
+        Args:
+            messages: The messages emitted by the agent loop.
+
+        Returns:
+            A list of structured tool event payloads.
+        """
+        events: List[Dict[str, Any]] = []
+        for message in messages:
+            if isinstance(message, AIMessage) and message.tool_calls:
+                for tool_call in message.tool_calls:
+                    events.append(
+                        {
+                            "kind": "tool_call",
+                            "id": tool_call.get("id"),
+                            "name": tool_call.get("name"),
+                            "args": tool_call.get("args"),
+                        }
+                    )
+            if isinstance(message, ToolMessage):
+                events.append(
+                    {
+                        "kind": "tool_output",
+                        "id": message.tool_call_id,
+                        "name": message.name,
+                        "output": message.content,
+                    }
+                )
+        return events
+
+    def execute_with_events(self, task: str) -> tuple[str, List[Dict[str, Any]]]:
+        """
+        Executes a task and returns output plus tool events.
+
+        Args:
+            task: The user task or prompt.
+
+        Returns:
+            The output text and a list of tool call/output events.
         """
         self.refresh()
         context = AgentContext(messages=[HumanMessage(content=task)])
@@ -178,5 +218,14 @@ class BasicAgent:
             "context": context.context,
         }
         result = self.graph.invoke(initial_state)
-        last_message = result["messages"][-1]
-        return str(last_message.content)
+        messages = result["messages"]
+        tool_events = self._collect_tool_events(messages)
+        last_message = messages[-1]
+        return str(last_message.content), tool_events
+
+    def execute(self, task: str) -> str:
+        """
+        Executes a task through the agentic loop.
+        """
+        output, _ = self.execute_with_events(task)
+        return output
