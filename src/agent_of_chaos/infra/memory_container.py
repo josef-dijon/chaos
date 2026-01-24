@@ -127,6 +127,7 @@ class MemoryContainer:
             self.raw_store.update_ltm_embed_status(ltm_id, "embedded")
         except Exception as exc:
             logger.error(f"Failed to save to LTM vector store: {exc}")
+            self.raw_store.update_ltm_embed_status(ltm_id, "retry")
         return ltm_id
 
     def finalize_loop(self, persona: str, loop_id: str) -> None:

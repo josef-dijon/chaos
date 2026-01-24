@@ -114,6 +114,9 @@ def test_record_event_vector_store_error(memory_deps):
         )
         == "ltm-1"
     )
+    memory_deps["raw"].return_value.update_ltm_embed_status.assert_called_once_with(
+        "ltm-1", "retry"
+    )
 
 
 def test_retrieve_for_personas(memory_deps):
