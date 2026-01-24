@@ -8,7 +8,7 @@ from uuid import uuid4
 
 import chromadb
 
-from agent_of_chaos.config import settings
+from agent_of_chaos.config import Config
 from agent_of_chaos.domain.identity import Identity
 from agent_of_chaos.infra.raw_memory_store import RawMemoryStore
 from agent_of_chaos.infra.utils import logger
@@ -23,12 +23,12 @@ class MemoryContainer:
     Coordinates raw idetic storage, STM summaries, and LTM vector storage.
     """
 
-    def __init__(self, agent_id: str, identity: Identity) -> None:
+    def __init__(self, agent_id: str, identity: Identity, config: Config) -> None:
         self.agent_id = agent_id
         self.identity = identity
-        self.raw_store = RawMemoryStore(settings.get_raw_db_path())
+        self.raw_store = RawMemoryStore(config.get_raw_db_path())
         self.chroma_client = chromadb.PersistentClient(
-            path=str(settings.get_chroma_db_path())
+            path=str(config.get_chroma_db_path())
         )
         self._collections = {
             "actor": self.chroma_client.get_or_create_collection(

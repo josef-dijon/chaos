@@ -1,22 +1,23 @@
 import pytest
 from unittest.mock import MagicMock, patch
 
+from agent_of_chaos.config import Config
 from agent_of_chaos.domain.identity import Identity
 from agent_of_chaos.infra.memory import MemoryContainer
 
 
 @patch("agent_of_chaos.infra.memory_container.RawMemoryStore")
 @patch("agent_of_chaos.infra.memory_container.chromadb.PersistentClient")
-@patch("agent_of_chaos.infra.memory_container.settings")
-def test_memory_record_exception(mock_settings, mock_chroma, mock_raw):
-    mock_settings.get_raw_db_path.return_value = "/tmp/raw.db"
-    mock_settings.get_chroma_db_path.return_value = "/tmp/chroma"
+def test_memory_record_exception(mock_chroma, mock_raw):
+    config = MagicMock(spec=Config)
+    config.get_raw_db_path.return_value = "/tmp/raw.db"
+    config.get_chroma_db_path.return_value = "/tmp/chroma"
     mock_raw.return_value.record_event.side_effect = Exception("DB Fail")
     mock_collection = MagicMock()
     mock_chroma.return_value.get_or_create_collection.return_value = mock_collection
 
     identity = Identity.create_default("agent")
-    mem = MemoryContainer(agent_id="agent", identity=identity)
+    mem = MemoryContainer(agent_id="agent", identity=identity, config=config)
 
     assert (
         mem.record_event(
@@ -32,15 +33,15 @@ def test_memory_record_exception(mock_settings, mock_chroma, mock_raw):
 
 @patch("agent_of_chaos.infra.memory_container.RawMemoryStore")
 @patch("agent_of_chaos.infra.memory_container.chromadb.PersistentClient")
-@patch("agent_of_chaos.infra.memory_container.settings")
-def test_memory_retrieve_empty_and_exception(mock_settings, mock_chroma, mock_raw):
-    mock_settings.get_raw_db_path.return_value = "/tmp/raw.db"
-    mock_settings.get_chroma_db_path.return_value = "/tmp/chroma"
+def test_memory_retrieve_empty_and_exception(mock_chroma, mock_raw):
+    config = MagicMock(spec=Config)
+    config.get_raw_db_path.return_value = "/tmp/raw.db"
+    config.get_chroma_db_path.return_value = "/tmp/chroma"
     mock_collection = MagicMock()
     mock_chroma.return_value.get_or_create_collection.return_value = mock_collection
 
     identity = Identity.create_default("agent")
-    mem = MemoryContainer(agent_id="agent", identity=identity)
+    mem = MemoryContainer(agent_id="agent", identity=identity, config=config)
 
     # Case: Empty results (documents is empty list)
     mock_collection.query.return_value = {"documents": []}

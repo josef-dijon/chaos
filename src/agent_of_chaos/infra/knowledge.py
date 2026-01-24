@@ -1,7 +1,7 @@
 import chromadb
 import uuid
 from typing import List, Optional, Dict, Any
-from agent_of_chaos.config import settings
+from agent_of_chaos.config import Config
 from agent_of_chaos.infra.utils import logger
 
 
@@ -10,9 +10,9 @@ class KnowledgeLibrary:
     Manages the static knowledge base using ChromaDB.
     """
 
-    def __init__(self, collection_name: str = "knowledge_base"):
+    def __init__(self, config: Config, collection_name: str = "knowledge_base"):
         self.chroma_client = chromadb.PersistentClient(
-            path=str(settings.get_chroma_db_path())
+            path=str(config.get_chroma_db_path())
         )
         self.collection = self.chroma_client.get_or_create_collection(
             name=collection_name

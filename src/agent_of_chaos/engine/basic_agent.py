@@ -14,7 +14,7 @@ from agent_of_chaos.infra.memory import MemoryView
 from agent_of_chaos.infra.skills import SkillsLibrary
 from agent_of_chaos.infra.knowledge import KnowledgeLibrary
 from agent_of_chaos.infra.tools import ToolLibrary
-from agent_of_chaos.config import settings
+from agent_of_chaos.config import Config
 import json
 
 
@@ -31,6 +31,7 @@ class BasicAgent:
     def __init__(
         self,
         identity: Identity,
+        config: Config,
         memory: MemoryView,
         skills_lib: SkillsLibrary,
         knowledge_lib: KnowledgeLibrary,
@@ -39,6 +40,7 @@ class BasicAgent:
         persona: str = "actor",
     ):
         self.identity = identity
+        self.config = config
         self.memory = memory
         self.skills_lib = skills_lib
         self.knowledge_lib = knowledge_lib
@@ -49,8 +51,8 @@ class BasicAgent:
 
         # Initialize LLM
         self.llm = ChatOpenAI(
-            model=settings.get_model_name(),
-            api_key=settings.get_openai_api_key(),  # type: ignore
+            model=self.config.get_model_name(),
+            api_key=self.config.get_openai_api_key(),  # type: ignore
         )
         self.graph = self._build_graph()
 

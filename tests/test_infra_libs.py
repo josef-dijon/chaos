@@ -1,5 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch, call
+
+from agent_of_chaos.config import Config
 from agent_of_chaos.infra.knowledge import KnowledgeLibrary
 from agent_of_chaos.infra.tools import ToolLibrary, FileReadTool, FileWriteTool
 
@@ -7,12 +9,13 @@ from agent_of_chaos.infra.tools import ToolLibrary, FileReadTool, FileWriteTool
 
 
 @patch("agent_of_chaos.infra.knowledge.chromadb.PersistentClient")
-@patch("agent_of_chaos.infra.knowledge.settings")
-def test_knowledge_add_document(mock_settings, mock_chroma):
+def test_knowledge_add_document(mock_chroma):
     mock_collection = MagicMock()
     mock_chroma.return_value.get_or_create_collection.return_value = mock_collection
+    config = MagicMock(spec=Config)
+    config.get_chroma_db_path.return_value = "/tmp/chroma"
 
-    lib = KnowledgeLibrary()
+    lib = KnowledgeLibrary(config=config)
     lib.add_document("content", "domainA", {"meta": "data"})
 
     mock_collection.add.assert_called_once()
@@ -23,13 +26,14 @@ def test_knowledge_add_document(mock_settings, mock_chroma):
 
 
 @patch("agent_of_chaos.infra.knowledge.chromadb.PersistentClient")
-@patch("agent_of_chaos.infra.knowledge.settings")
-def test_knowledge_search(mock_settings, mock_chroma):
+def test_knowledge_search(mock_chroma):
     mock_collection = MagicMock()
     mock_chroma.return_value.get_or_create_collection.return_value = mock_collection
     mock_collection.query.return_value = {"documents": [["res1"]]}
+    config = MagicMock(spec=Config)
+    config.get_chroma_db_path.return_value = "/tmp/chroma"
 
-    lib = KnowledgeLibrary()
+    lib = KnowledgeLibrary(config=config)
 
     # Test searches with access control variations
     assert lib.search("q") == ["res1"]
@@ -48,13 +52,14 @@ def test_knowledge_search(mock_settings, mock_chroma):
 
 
 @patch("agent_of_chaos.infra.knowledge.chromadb.PersistentClient")
-@patch("agent_of_chaos.infra.knowledge.settings")
-def test_knowledge_error_handling(mock_settings, mock_chroma):
+def test_knowledge_error_handling(mock_chroma):
     mock_collection = MagicMock()
     mock_chroma.return_value.get_or_create_collection.return_value = mock_collection
     mock_collection.add.side_effect = Exception("db error")
+    config = MagicMock(spec=Config)
+    config.get_chroma_db_path.return_value = "/tmp/chroma"
 
-    lib = KnowledgeLibrary()
+    lib = KnowledgeLibrary(config=config)
     # Should not raise
     lib.add_document("c", "d")
 

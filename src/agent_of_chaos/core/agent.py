@@ -1,4 +1,6 @@
 from pathlib import Path
+from agent_of_chaos.config import Config
+from agent_of_chaos.config_provider import ConfigProvider
 from agent_of_chaos.domain.identity import Identity, agent_id_from_path
 from agent_of_chaos.infra.memory import MemoryContainer
 from agent_of_chaos.infra.skills import SkillsLibrary
@@ -12,8 +14,9 @@ class Agent:
     The main Agent of CHAOS, orchestrating the Actor and Subconscious.
     """
 
-    def __init__(self, identity_path: Path):
+    def __init__(self, identity_path: Path, config: Config | None = None):
         self.identity_path = identity_path
+        self.config = config or ConfigProvider().load()
         if identity_path.exists():
             self.identity = Identity.load(identity_path)
         else:
@@ -22,12 +25,14 @@ class Agent:
             self.identity.save(identity_path)
 
         self.memory = MemoryContainer(
-            agent_id=self.identity.agent_id, identity=self.identity
+            agent_id=self.identity.agent_id,
+            identity=self.identity,
+            config=self.config,
         )
         self.actor_memory = self.memory.actor_view()
         self.subconscious_memory = self.memory.subconscious_view()
         self.skills_lib = SkillsLibrary()
-        self.knowledge_lib = KnowledgeLibrary()
+        self.knowledge_lib = KnowledgeLibrary(self.config)
 
         # Initialize ToolLibrary and register default tools
         self.tool_lib = ToolLibrary()
@@ -36,6 +41,7 @@ class Agent:
 
         self.actor = BasicAgent(
             identity=self.identity,
+            config=self.config,
             memory=self.actor_memory,
             skills_lib=self.skills_lib,
             knowledge_lib=self.knowledge_lib,
@@ -49,6 +55,7 @@ class Agent:
 
         self.subconscious = BasicAgent(
             identity=self.sub_identity,
+            config=self.config,
             memory=self.subconscious_memory,
             skills_lib=self.skills_lib,
             knowledge_lib=self.knowledge_lib,

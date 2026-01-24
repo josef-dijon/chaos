@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from agent_of_chaos.config import Config
 from agent_of_chaos.domain.identity import Identity
 from agent_of_chaos.infra.memory import MemoryContainer
 from agent_of_chaos.infra.raw_memory_store import IdeticEvent
@@ -17,10 +18,10 @@ def memory_deps():
         patch(
             "agent_of_chaos.infra.memory_container.chromadb.PersistentClient"
         ) as mock_chroma,
-        patch("agent_of_chaos.infra.memory_container.settings") as mock_settings,
     ):
-        mock_settings.get_raw_db_path.return_value = "/tmp/raw.db"
-        mock_settings.get_chroma_db_path.return_value = "/tmp/chroma"
+        config = MagicMock(spec=Config)
+        config.get_raw_db_path.return_value = "/tmp/raw.db"
+        config.get_chroma_db_path.return_value = "/tmp/chroma"
 
         actor_collection = MagicMock()
         subconscious_collection = MagicMock()
@@ -33,7 +34,7 @@ def memory_deps():
             "identity": identity,
             "raw": mock_raw,
             "chroma": mock_chroma,
-            "settings": mock_settings,
+            "config": config,
             "actor_collection": actor_collection,
             "subconscious_collection": subconscious_collection,
         }
@@ -43,6 +44,7 @@ def test_memory_container_init(memory_deps):
     mem = MemoryContainer(
         agent_id="agent",
         identity=memory_deps["identity"],
+        config=memory_deps["config"],
     )
 
     memory_deps["raw"].assert_called_once_with("/tmp/raw.db")
@@ -60,6 +62,7 @@ def test_record_event_updates_vector_store(memory_deps):
     mem = MemoryContainer(
         agent_id="agent",
         identity=memory_deps["identity"],
+        config=memory_deps["config"],
     )
     memory_deps["raw"].return_value.record_event.return_value = (
         "event-1",
@@ -90,6 +93,7 @@ def test_record_event_vector_store_error(memory_deps):
     mem = MemoryContainer(
         agent_id="agent",
         identity=memory_deps["identity"],
+        config=memory_deps["config"],
     )
     memory_deps["raw"].return_value.record_event.return_value = (
         "event-1",
@@ -114,6 +118,7 @@ def test_retrieve_for_personas(memory_deps):
     mem = MemoryContainer(
         agent_id="agent",
         identity=memory_deps["identity"],
+        config=memory_deps["config"],
     )
     memory_deps["actor_collection"].query.return_value = {"documents": [["doc1"]]}
     memory_deps["subconscious_collection"].query.return_value = {
@@ -141,6 +146,7 @@ def test_finalize_loop_creates_summary(memory_deps):
     mem = MemoryContainer(
         agent_id="agent",
         identity=memory_deps["identity"],
+        config=memory_deps["config"],
     )
     memory_deps["raw"].return_value.list_idetic_events.return_value = [
         IdeticEvent(
@@ -182,6 +188,7 @@ def test_finalize_loop_with_no_events(memory_deps):
     mem = MemoryContainer(
         agent_id="agent",
         identity=memory_deps["identity"],
+        config=memory_deps["config"],
     )
     memory_deps["raw"].return_value.list_idetic_events.return_value = []
 
@@ -194,6 +201,7 @@ def test_get_recent_stm_as_string(memory_deps):
     mem = MemoryContainer(
         agent_id="agent",
         identity=memory_deps["identity"],
+        config=memory_deps["config"],
     )
     memory_deps["raw"].return_value.list_stm_entries.return_value = [
         {
@@ -217,6 +225,7 @@ def test_get_recent_stm_as_string_empty(memory_deps):
     mem = MemoryContainer(
         agent_id="agent",
         identity=memory_deps["identity"],
+        config=memory_deps["config"],
     )
     memory_deps["raw"].return_value.list_stm_entries.return_value = []
 
@@ -229,6 +238,7 @@ def test_retrieve_unknown_persona(memory_deps):
     mem = MemoryContainer(
         agent_id="agent",
         identity=memory_deps["identity"],
+        config=memory_deps["config"],
     )
 
     assert mem.retrieve_for_personas(["missing"], "query") == []
@@ -238,6 +248,7 @@ def test_create_loop_id(memory_deps):
     mem = MemoryContainer(
         agent_id="agent",
         identity=memory_deps["identity"],
+        config=memory_deps["config"],
     )
 
     loop_id = mem.create_loop_id()

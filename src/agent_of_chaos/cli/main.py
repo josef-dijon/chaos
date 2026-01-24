@@ -1,6 +1,7 @@
 import typer
 from rich.console import Console
 from pathlib import Path
+from agent_of_chaos.config_provider import ConfigProvider
 from agent_of_chaos.core.agent import Agent
 
 app = typer.Typer()
@@ -35,7 +36,8 @@ def init(
     if IDENTITY_PATH.exists():
         console.print("[yellow]Identity already exists.[/yellow]")
         return
-    Agent(IDENTITY_PATH)  # Creates default identity via __init__ logic
+    config = ConfigProvider().load()
+    Agent(IDENTITY_PATH, config=config)  # Creates default identity via __init__ logic
     console.print(
         f"[green]Initialized new Chaos Agent identity at {IDENTITY_PATH}.[/green]"
     )
@@ -56,7 +58,8 @@ def do(
     """
     try:
         identity_path = _identity_path(agent)
-        agent_obj = Agent(identity_path)
+        config = ConfigProvider().load()
+        agent_obj = Agent(identity_path, config=config)
         console.print(f"[bold green]Actor:[/bold green] working on '{task}'...")
         response = agent_obj.do(task)
         console.print(f"[green]{response}[/green]")
@@ -79,7 +82,8 @@ def learn(
     """
     try:
         identity_path = _identity_path(agent)
-        agent_obj = Agent(identity_path)
+        config = ConfigProvider().load()
+        agent_obj = Agent(identity_path, config=config)
         console.print(
             f"[bold blue]Subconscious:[/bold blue] reflecting on '{feedback}'..."
         )
@@ -103,7 +107,8 @@ def dream(
     """
     try:
         identity_path = _identity_path(agent)
-        agent_obj = Agent(identity_path)
+        config = ConfigProvider().load()
+        agent_obj = Agent(identity_path, config=config)
         console.print("[bold blue]Subconscious:[/bold blue] dreaming...")
         result = agent_obj.dream()
         console.print(f"[blue]{result}[/blue]")

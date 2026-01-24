@@ -13,6 +13,7 @@ def mock_dependencies():
         patch("agent_of_chaos.core.agent.ToolLibrary") as mock_tools,
         patch("agent_of_chaos.core.agent.SkillsLibrary") as mock_skills,
         patch("agent_of_chaos.core.agent.KnowledgeLibrary") as mock_know,
+        patch("agent_of_chaos.core.agent.ConfigProvider") as mock_config_provider,
     ):
         # Setup common returns
         mock_ident_instance = MagicMock()
@@ -28,6 +29,9 @@ def mock_dependencies():
         mock_mem_instance.actor_view.return_value = MagicMock()
         mock_mem_instance.subconscious_view.return_value = MagicMock()
 
+        mock_config = MagicMock()
+        mock_config_provider.return_value.load.return_value = mock_config
+
         yield {
             "ident": mock_ident,
             "basic": mock_basic,
@@ -35,6 +39,7 @@ def mock_dependencies():
             "tools": mock_tools,
             "skills": mock_skills,
             "know": mock_know,
+            "config": mock_config,
         }
 
 
@@ -48,7 +53,9 @@ def test_agent_init_existing_identity(mock_dependencies):
     mocks["ident"].load.assert_any_call(Path("dummy_path"))
 
     mocks["mem"].assert_called_once_with(
-        agent_id="tester", identity=mocks["ident"].load.return_value
+        agent_id="tester",
+        identity=mocks["ident"].load.return_value,
+        config=mocks["config"],
     )
 
     assert agent.identity.profile.role == "tester"
@@ -58,6 +65,7 @@ def test_agent_init_existing_identity(mock_dependencies):
         [
             call(
                 identity=mocks["ident"].load.return_value,
+                config=mocks["config"],
                 memory=mocks["mem"].return_value.actor_view.return_value,
                 skills_lib=ANY,
                 knowledge_lib=ANY,
@@ -67,6 +75,7 @@ def test_agent_init_existing_identity(mock_dependencies):
             ),
             call(
                 identity=mocks["ident"].load.return_value,
+                config=mocks["config"],
                 memory=mocks["mem"].return_value.subconscious_view.return_value,
                 skills_lib=ANY,
                 knowledge_lib=ANY,

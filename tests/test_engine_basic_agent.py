@@ -1,6 +1,7 @@
 import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch, call
+from agent_of_chaos.config import Config
 from agent_of_chaos.engine.basic_agent import BasicAgent, AgentState
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage, SystemMessage
 
@@ -27,9 +28,13 @@ def mock_deps():
     mock_skills = MagicMock()
     mock_know = MagicMock()
     mock_tools = MagicMock()
+    mock_config = MagicMock(spec=Config)
+    mock_config.get_model_name.return_value = "gpt-4o"
+    mock_config.get_openai_api_key.return_value = "test-key"
 
     return {
         "identity": mock_ident,
+        "config": mock_config,
         "memory": mock_mem,
         "skills_lib": mock_skills,
         "knowledge_lib": mock_know,
