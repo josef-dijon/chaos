@@ -1,7 +1,11 @@
 import pytest
+from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch, call
 
 from agent_of_chaos.config import Config
+from agent_of_chaos.infra.file_read_tool import MAX_READ_BYTES
+from agent_of_chaos.infra.file_write_tool import MAX_WRITE_BYTES
 from agent_of_chaos.infra.knowledge import KnowledgeLibrary
 from agent_of_chaos.infra.tools import ToolLibrary, FileReadTool, FileWriteTool
 
@@ -69,7 +73,7 @@ def test_knowledge_error_handling(mock_chroma):
 
 def test_tool_library_registry():
     lib = ToolLibrary()
-    tool = FileReadTool()
+    tool = FileReadTool(root=Path("."))
     lib.register(tool)
 
     assert lib.get_tool("read_file") == tool
@@ -79,8 +83,8 @@ def test_tool_library_registry():
 
 def test_tool_library_filter():
     lib = ToolLibrary()
-    t1 = FileReadTool()
-    t2 = FileWriteTool()
+    t1 = FileReadTool(root=Path("."))
+    t2 = FileWriteTool(root=Path("."))
     lib.register(t1)
     lib.register(t2)
 
@@ -95,9 +99,11 @@ def test_tool_library_filter():
     assert filtered[0].name == "write_file"
 
 
+@patch("pathlib.Path.stat")
 @patch("pathlib.Path.read_text")
-def test_file_read_tool(mock_read):
-    tool = FileReadTool()
+def test_file_read_tool(mock_read, mock_stat):
+    tool = FileReadTool(root=Path("."))
+    mock_stat.return_value = SimpleNamespace(st_size=MAX_READ_BYTES)
     mock_read.return_value = "content"
 
     # Success
@@ -105,24 +111,50 @@ def test_file_read_tool(mock_read):
     mock_read.assert_called_with()
 
     # Missing arg
-    assert "required" in tool.call({})
+    assert "missing_argument" in tool.call({})
+
+    # Outside root
+    assert "path_outside_root" in tool.call({"file_path": "/etc/passwd"})
 
     # Exception
     mock_read.side_effect = Exception("Error")
-    assert "Error" in tool.call({"file_path": "foo.txt"})
+    assert "read_failed" in tool.call({"file_path": "foo.txt"})
 
 
-@patch("pathlib.Path.write_text")
-def test_file_write_tool(mock_write):
-    tool = FileWriteTool()
+@patch("pathlib.Path.stat")
+def test_file_read_tool_rejects_large_file(mock_stat):
+    tool = FileReadTool(root=Path("."))
+    mock_stat.return_value = SimpleNamespace(st_size=MAX_READ_BYTES + 1)
+
+    assert "size_limit" in tool.call({"file_path": "foo.txt"})
+
+
+def test_file_write_tool(tmp_path):
+    tool = FileWriteTool(root=tmp_path)
 
     # Success
     assert "successfully" in tool.call({"file_path": "foo.txt", "content": "bar"})
-    mock_write.assert_called_with("bar")
+    assert (tmp_path / "foo.txt").read_text() == "bar"
 
     # Missing args
-    assert "required" in tool.call({"file_path": "foo.txt"})
+    assert "missing_argument" in tool.call({"file_path": "foo.txt"})
 
-    # Exception
-    mock_write.side_effect = Exception("Error")
-    assert "Error" in tool.call({"file_path": "foo.txt", "content": "bar"})
+    # Outside root
+    assert "path_outside_root" in tool.call(
+        {"file_path": "/etc/passwd", "content": "x"}
+    )
+
+
+def test_file_write_tool_rejects_large_content():
+    tool = FileWriteTool(root=Path("."))
+    content = "a" * (MAX_WRITE_BYTES + 1)
+
+    assert "size_limit" in tool.call({"file_path": "foo.txt", "content": content})
+
+
+@patch("agent_of_chaos.infra.file_write_tool.tempfile.NamedTemporaryFile")
+def test_file_write_tool_handles_temp_error(mock_temp):
+    tool = FileWriteTool(root=Path("."))
+    mock_temp.side_effect = Exception("Error")
+
+    assert "write_failed" in tool.call({"file_path": "foo.txt", "content": "bar"})

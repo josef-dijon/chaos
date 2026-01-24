@@ -41,8 +41,8 @@ class Agent:
 
         # Initialize ToolLibrary and register default tools
         self.tool_lib = ToolLibrary()
-        self.tool_lib.register(FileReadTool())
-        self.tool_lib.register(FileWriteTool())
+        self.tool_lib.register(FileReadTool(root=self.config.get_tool_root()))
+        self.tool_lib.register(FileWriteTool(root=self.config.get_tool_root()))
 
         self.actor = BasicAgent(
             identity=self.identity,

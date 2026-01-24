@@ -94,3 +94,11 @@ def test_config_memory_paths(tmp_path: Path) -> None:
 
     assert raw_path == tmp_path / ".chaos" / "db" / "raw.sqlite"
     assert chroma_path == tmp_path / ".chaos" / "db" / "chroma"
+
+
+def test_config_tool_root_defaults_to_cwd(tmp_path: Path, monkeypatch) -> None:
+    """Defaults tool root to the current working directory."""
+    monkeypatch.chdir(tmp_path)
+    config = Config()
+
+    assert config.get_tool_root() == tmp_path.resolve()

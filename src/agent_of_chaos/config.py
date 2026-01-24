@@ -29,6 +29,9 @@ class Config(BaseModel):
     raw_db_path: Optional[Path] = Field(
         default=None, description="Path to the raw SQLite event store."
     )
+    tool_root: Optional[Path] = Field(
+        default=None, description="Root directory for file tool access."
+    )
 
     model_config = ConfigDict(extra="forbid")
 
@@ -74,6 +77,8 @@ class Config(BaseModel):
             self.raw_db_path = self._resolve_relative_path(
                 self.raw_db_path, self.chaos_dir
             )
+        if self.tool_root is None:
+            self.tool_root = Path.cwd().resolve()
         return self
 
     @classmethod
@@ -134,6 +139,17 @@ class Config(BaseModel):
         if self.raw_db_path is None:
             raise ValueError("Raw database path is not configured.")
         return self.raw_db_path
+
+    def get_tool_root(self) -> Path:
+        """
+        Returns the root directory for file tool operations.
+
+        Returns:
+            The root directory path for file tool access.
+        """
+        if self.tool_root is None:
+            raise ValueError("Tool root path is not configured.")
+        return self.tool_root
 
     def get_chaos_dir(self) -> Path:
         """

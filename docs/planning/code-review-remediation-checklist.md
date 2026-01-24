@@ -37,12 +37,12 @@
 - [x] Add tests covering STM summarization bounds and tool-call memory retention.
 
 ## Phase 4: Tool Safety & IO Boundaries
-- [ ] Define config-driven allowed root for file tools (workspace or `.chaos`).
-- [ ] Validate file paths against the allowed root and block traversal escapes.
-- [ ] Add maximum size limits for read/write operations.
-- [ ] Implement atomic writes (temp file + rename) for `FileWriteTool`.
-- [ ] Use explicit error objects or error codes for tool failures.
-- [ ] Add tests for path validation, size limits, and atomic write behavior.
+- [x] Define config-driven allowed root for file tools (workspace or `.chaos`).
+- [x] Validate file paths against the allowed root and block traversal escapes.
+- [x] Add maximum size limits for read/write operations.
+- [x] Implement atomic writes (temp file + rename) for `FileWriteTool`.
+- [x] Use explicit error objects or error codes for tool failures.
+- [x] Add tests for path validation, size limits, and atomic write behavior.
 
 ## Phase 5: Domain Model Reorganization
 - [ ] Split `Identity`-related Pydantic models into separate files.

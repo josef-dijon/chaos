@@ -1,10 +1,13 @@
 """Local file read tool implementation."""
 
 from dataclasses import dataclass, field
+import json
 from pathlib import Path
 from typing import Any, Dict
 
 from agent_of_chaos.domain.tool import BaseTool, ToolType
+
+MAX_READ_BYTES = 1_000_000
 
 
 @dataclass
@@ -28,6 +31,46 @@ class FileReadTool(BaseTool):
             "required": ["file_path"],
         }
     )
+    root: Path = field(default_factory=Path.cwd)
+
+    def _resolve_path(self, file_path: str) -> Path:
+        """
+        Resolves a file path and validates it against the allowed root.
+
+        Args:
+            file_path: The requested file path.
+
+        Returns:
+            The resolved file path.
+        """
+        root = self.root.expanduser().resolve()
+        candidate = Path(file_path).expanduser()
+        if not candidate.is_absolute():
+            candidate = (root / candidate).resolve()
+        else:
+            candidate = candidate.resolve()
+
+        try:
+            candidate.relative_to(root)
+        except ValueError as exc:
+            raise ValueError(
+                f"Error: file_path is outside allowed root {root}."
+            ) from exc
+
+        return candidate
+
+    def _error(self, code: str, message: str) -> str:
+        """
+        Formats an error payload for tool responses.
+
+        Args:
+            code: Machine-readable error code.
+            message: Human-readable error message.
+
+        Returns:
+            A JSON error payload string.
+        """
+        return json.dumps({"error": {"code": code, "message": message}})
 
     def call(self, args: Dict[str, Any]) -> str:
         """
@@ -41,8 +84,16 @@ class FileReadTool(BaseTool):
         """
         file_path = args.get("file_path")
         if not file_path:
-            return "Error: file_path argument is required."
+            return self._error("missing_argument", "file_path is required")
         try:
-            return Path(file_path).read_text()
+            resolved_path = self._resolve_path(file_path)
+            if resolved_path.stat().st_size > MAX_READ_BYTES:
+                return self._error(
+                    "size_limit",
+                    f"file exceeds max size of {MAX_READ_BYTES} bytes",
+                )
+            return resolved_path.read_text()
+        except ValueError as exc:
+            return self._error("path_outside_root", str(exc))
         except Exception as exc:
-            return f"Error reading file: {exc}"
+            return self._error("read_failed", str(exc))
