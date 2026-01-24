@@ -18,9 +18,9 @@
 - [x] Refactor ToolLibrary to expose schemas/types
 - [x] Remove hardcoded tool schemas in BasicAgent
 - [ ] Integrate tool manifest access control in agent/tool selection
-- [ ] Separate knowledge storage path/collections from memory
-- [ ] Enforce identity-level access rules for skills/knowledge
+- [x] Separate knowledge storage path/collections from memory
+- [x] Enforce identity-level access rules for skills/knowledge
 - [ ] Update agent flow to refresh identity per loop definition
 - [x] Update unit tests for new config/identity/memory behavior
 - [x] Update functional tests for new storage paths and memory behavior
-- [ ] Fill knowledge/skills coverage gaps
+- [x] Fill knowledge/skills coverage gaps

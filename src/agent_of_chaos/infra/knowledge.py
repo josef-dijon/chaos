@@ -49,9 +49,9 @@ class KnowledgeLibrary:
         where_filter = {}
 
         # Access Control Logic
-        if whitelist:
+        if whitelist is not None:
             where_filter["domain"] = {"$in": whitelist}
-        elif blacklist:
+        elif blacklist is not None:
             where_filter["domain"] = {"$nin": blacklist}
 
         # If where_filter is empty, pass None to avoid Chroma error if strictly typed?

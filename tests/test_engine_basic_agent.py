@@ -77,13 +77,42 @@ def test_recall(mock_graph, mock_llm, mock_deps):
     assert "LTM: Memory 1" in result["context"]
     assert "Reference Knowledge: Knowledge 1" in result["context"]
     mock_deps["memory"].retrieve.assert_called_with("Help me")
+    mock_deps["knowledge_lib"].search.assert_called_with(
+        query="Help me",
+        whitelist=mock_deps["identity"].knowledge_whitelist,
+        blacklist=mock_deps["identity"].knowledge_blacklist,
+    )
+
+
+@patch("agent_of_chaos.engine.basic_agent.ChatOpenAI")
+@patch("agent_of_chaos.engine.basic_agent.StateGraph")
+def test_recall_subconscious_full_access(mock_graph, mock_llm, mock_deps):
+    mock_deps["identity"].knowledge_whitelist = ["restricted"]
+    mock_deps["identity"].knowledge_blacklist = ["blocked"]
+    mock_deps["memory"].retrieve.return_value = "Memory 1"
+    mock_deps["knowledge_lib"].search.return_value = "Knowledge 1"
+
+    agent = BasicAgent(**mock_deps, persona="subconscious")
+
+    state: AgentState = {
+        "messages": [HumanMessage(content="Help me")],
+        "context": "",
+    }
+
+    agent.recall(state)
+
+    mock_deps["knowledge_lib"].search.assert_called_with(
+        query="Help me",
+        whitelist=None,
+        blacklist=None,
+    )
 
 
 @patch("agent_of_chaos.engine.basic_agent.ChatOpenAI")
 @patch("agent_of_chaos.engine.basic_agent.StateGraph")
 def test_reason_logic(mock_graph, mock_llm, mock_deps):
     # Setup
-    mock_deps["skills_lib"].filter_skills.return_value = [
+    mock_deps["skills_lib"].list_skills.return_value = [
         MagicMock(name="S1", content="How to test")
     ]
 
@@ -113,7 +142,7 @@ def test_reason_logic(mock_graph, mock_llm, mock_deps):
     assert result["messages"][0].content == "response"
 
     # Check skills fetch
-    mock_deps["skills_lib"].filter_skills.assert_called()
+    mock_deps["skills_lib"].list_skills.assert_called()
 
     # Check tool binding
     mock_deps["tool_lib"].list_tools.assert_called()

@@ -34,12 +34,14 @@ class BasicAgent:
         skills_lib: SkillsLibrary,
         knowledge_lib: KnowledgeLibrary,
         tool_lib: ToolLibrary,
+        persona: str = "actor",
     ):
         self.identity = identity
         self.memory = memory
         self.skills_lib = skills_lib
         self.knowledge_lib = knowledge_lib
         self.tool_lib = tool_lib
+        self.persona = persona
 
         # Initialize LLM
         self.llm = ChatOpenAI(
@@ -101,10 +103,16 @@ class BasicAgent:
             context_parts.append(f"LTM: {ltm_context}")
 
         # 2. Knowledge Retrieval
+        knowledge_whitelist = self.identity.knowledge_whitelist
+        knowledge_blacklist = self.identity.knowledge_blacklist
+        if self.persona == "subconscious":
+            knowledge_whitelist = None
+            knowledge_blacklist = None
+
         knowledge = self.knowledge_lib.search(
             query=query,
-            whitelist=self.identity.knowledge_whitelist,
-            blacklist=self.identity.knowledge_blacklist,
+            whitelist=knowledge_whitelist,
+            blacklist=knowledge_blacklist,
         )
         if knowledge:
             context_parts.append(f"Reference Knowledge: {knowledge}")
@@ -120,7 +128,7 @@ class BasicAgent:
         operational_notes = "\n".join(self.identity.instructions.operational_notes)
 
         # Skills Injection
-        available_skills = self.skills_lib.filter_skills(
+        available_skills = self.skills_lib.list_skills(
             whitelist=self.identity.skills_whitelist,
             blacklist=self.identity.skills_blacklist,
         )

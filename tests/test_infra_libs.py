@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, call
 from agent_of_chaos.infra.knowledge import KnowledgeLibrary
 from agent_of_chaos.infra.tools import ToolLibrary, FileReadTool, FileWriteTool
 
@@ -31,19 +31,19 @@ def test_knowledge_search(mock_settings, mock_chroma):
 
     lib = KnowledgeLibrary()
 
-    # Test basic search
+    # Test searches with access control variations
     assert lib.search("q") == ["res1"]
-
-    # Test whitelist
     lib.search("q", whitelist=["d1"])
-    mock_collection.query.assert_called_with(
-        query_texts=["q"], n_results=3, where={"domain": {"$in": ["d1"]}}
-    )
-
-    # Test blacklist
     lib.search("q", blacklist=["d2"])
-    mock_collection.query.assert_called_with(
-        query_texts=["q"], n_results=3, where={"domain": {"$nin": ["d2"]}}
+    lib.search("q", whitelist=[])
+
+    mock_collection.query.assert_has_calls(
+        [
+            call(query_texts=["q"], n_results=3, where=None),
+            call(query_texts=["q"], n_results=3, where={"domain": {"$in": ["d1"]}}),
+            call(query_texts=["q"], n_results=3, where={"domain": {"$nin": ["d2"]}}),
+            call(query_texts=["q"], n_results=3, where={"domain": {"$in": []}}),
+        ]
     )
 
 

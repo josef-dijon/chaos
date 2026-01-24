@@ -32,10 +32,7 @@ class SkillsLibrary(Library[Skill]):
     def get_skill(self, name: str) -> Optional[Skill]:
         return self._registry.get(name)
 
-    def list_skills(self) -> List[Skill]:
-        return list(self._registry.values())
-
-    def filter_skills(
+    def list_skills(
         self,
         whitelist: Optional[List[str]] = None,
         blacklist: Optional[List[str]] = None,
@@ -43,4 +40,5 @@ class SkillsLibrary(Library[Skill]):
         """
         Returns skills based on access control lists.
         """
-        return self.apply_access_control(self.list_skills(), whitelist, blacklist)
+        skills = list(self._registry.values())
+        return self.apply_access_control(skills, whitelist, blacklist)

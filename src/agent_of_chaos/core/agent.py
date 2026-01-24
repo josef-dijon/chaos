@@ -36,6 +36,7 @@ class Agent:
             skills_lib=self.skills_lib,
             knowledge_lib=self.knowledge_lib,
             tool_lib=self.tool_lib,
+            persona="actor",
         )
 
         # Subconscious setup uses the same identity source of truth.
@@ -47,6 +48,7 @@ class Agent:
             skills_lib=self.skills_lib,
             knowledge_lib=self.knowledge_lib,
             tool_lib=self.tool_lib,
+            persona="subconscious",
         )
 
     def do(self, task: str) -> str:
