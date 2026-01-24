@@ -30,8 +30,8 @@ The [Architecture Specification](docs/architecture.md) is the **single source of
 3.  **Planning Process:**
     - **Plan Before Code:** Never start implementing features without a plan.
     - **Documents:**
-        - Create a planning document in `docs/` with a `-plan.md` suffix.
-        - Create a companion checklist file in `docs/` with a `-checklist.md` suffix.
+        - Create a planning document in `docs/planning/` with a `-plan.md` suffix.
+        - Create a companion checklist file in `docs/planning/` with a `-checklist.md` suffix.
     - **Tracking:** Mark checklist items as done as the plan is executed.
     - **Completion:** Once a plan is completed, tested, and committed, rename the planning document to suffix it with `-complete.md` and delete the accompanying checklist file.
 
