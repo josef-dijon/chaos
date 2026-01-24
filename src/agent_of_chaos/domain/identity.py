@@ -212,6 +212,23 @@ def _default_memory_config() -> MemoryConfig:
     )
 
 
+def _memory_config_for_agent(agent_id: str) -> MemoryConfig:
+    """
+    Builds a default memory configuration using an agent-specific prefix.
+
+    Args:
+        agent_id: The agent identifier.
+
+    Returns:
+        The memory configuration for the agent.
+    """
+    actor_config = _default_actor_memory_config()
+    subconscious_config = _default_subconscious_memory_config()
+    actor_config.ltm_collection = f"{agent_id}__actor__ltm"
+    subconscious_config.ltm_collection = f"{agent_id}__subconscious__ltm"
+    return MemoryConfig(actor=actor_config, subconscious=subconscious_config)
+
+
 class Identity(BaseModel):
     """
     The persistent state of an agent, containing profile, instructions, and capabilities.
@@ -325,6 +342,7 @@ class Identity(BaseModel):
             ),
             instructions=Instructions(system_prompts=["You are a helpful assistant."]),
             tool_manifest=[],
+            memory=_memory_config_for_agent(agent_id or "default"),
         )
         identity.set_agent_id(agent_id)
         return identity

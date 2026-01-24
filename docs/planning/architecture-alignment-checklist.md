@@ -8,11 +8,11 @@
 - [x] Implement agent_id derivation from identity file name
 - [x] Enforce identity version compatibility on load
 - [x] Update subconscious identity loading to standard path
-- [ ] Implement idetic event schema and raw event store (SQLite)
-- [ ] Build LTM vector store wired 1:1 to idetic events
-- [ ] Implement STM per loop with loop_id tracking
-- [ ] Add persona-specific memory access controls
-- [ ] Update agent flows to emit idetic events + loop_id
+- [x] Implement idetic event schema and raw event store (SQLite)
+- [x] Build LTM vector store wired 1:1 to idetic events
+- [x] Implement STM per loop with loop_id tracking
+- [x] Add persona-specific memory access controls
+- [x] Update agent flows to emit idetic events + loop_id
 - [x] Add BaseTool type/schema/call contract
 - [x] Split tools into one-class-per-file modules
 - [x] Refactor ToolLibrary to expose schemas/types

@@ -53,6 +53,14 @@ def test_create_default_identity_sets_agent_id():
 
     assert identity.agent_id == "default"
     assert identity.profile.name == "default"
+    assert identity.memory.actor.ltm_collection == "default__actor__ltm"
+
+
+def test_create_default_identity_uses_agent_prefix():
+    identity = Identity.create_default("alpha")
+
+    assert identity.memory.actor.ltm_collection == "alpha__actor__ltm"
+    assert identity.memory.subconscious.ltm_collection == "alpha__subconscious__ltm"
 
 
 def test_resolve_tool_whitelist_prefers_explicit_whitelist():

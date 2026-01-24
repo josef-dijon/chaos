@@ -10,7 +10,7 @@ from langchain_core.messages import (
 )
 from langchain_openai import ChatOpenAI
 from agent_of_chaos.domain.identity import Identity
-from agent_of_chaos.infra.memory import MemoryContainer
+from agent_of_chaos.infra.memory import MemoryView
 from agent_of_chaos.infra.skills import SkillsLibrary
 from agent_of_chaos.infra.knowledge import KnowledgeLibrary
 from agent_of_chaos.infra.tools import ToolLibrary
@@ -31,7 +31,7 @@ class BasicAgent:
     def __init__(
         self,
         identity: Identity,
-        memory: MemoryContainer,
+        memory: MemoryView,
         skills_lib: SkillsLibrary,
         knowledge_lib: KnowledgeLibrary,
         tool_lib: ToolLibrary,

@@ -20,7 +20,13 @@ def mock_dependencies():
         mock_ident.create_default.return_value = mock_ident_instance
         mock_ident.return_value = mock_ident_instance
         mock_ident_instance.profile.role = "tester"
+        mock_ident_instance.agent_id = "tester"
         mock_ident_instance.tuning_policy.allow_subconscious_identity_updates = True
+
+        mock_mem_instance = MagicMock()
+        mock_mem.return_value = mock_mem_instance
+        mock_mem_instance.actor_view.return_value = MagicMock()
+        mock_mem_instance.subconscious_view.return_value = MagicMock()
 
         yield {
             "ident": mock_ident,
@@ -41,6 +47,10 @@ def test_agent_init_existing_identity(mock_dependencies):
     assert mocks["ident"].load.call_count == 1
     mocks["ident"].load.assert_any_call(Path("dummy_path"))
 
+    mocks["mem"].assert_called_once_with(
+        agent_id="tester", identity=mocks["ident"].load.return_value
+    )
+
     assert agent.identity.profile.role == "tester"
     # BasicAgent called twice: actor + subconscious
     assert mocks["basic"].call_count == 2
@@ -48,7 +58,7 @@ def test_agent_init_existing_identity(mock_dependencies):
         [
             call(
                 identity=mocks["ident"].load.return_value,
-                memory=ANY,
+                memory=mocks["mem"].return_value.actor_view.return_value,
                 skills_lib=ANY,
                 knowledge_lib=ANY,
                 tool_lib=ANY,
@@ -57,7 +67,7 @@ def test_agent_init_existing_identity(mock_dependencies):
             ),
             call(
                 identity=mocks["ident"].load.return_value,
-                memory=ANY,
+                memory=mocks["mem"].return_value.subconscious_view.return_value,
                 skills_lib=ANY,
                 knowledge_lib=ANY,
                 tool_lib=ANY,
@@ -88,6 +98,7 @@ def test_agent_do(mock_dependencies):
     mock_actor = MagicMock()
     mock_sub = MagicMock()
     mocks["basic"].side_effect = [mock_actor, mock_sub]
+    mocks["mem"].return_value.create_loop_id.return_value = "loop-1"
 
     with patch("pathlib.Path.exists", return_value=True):
         agent = Agent(Path("dummy"))
@@ -96,11 +107,23 @@ def test_agent_do(mock_dependencies):
 
     result = agent.do("clean up")
 
-    # record is called with kwargs: role="user", content="task"
-    mocks["mem"].return_value.record.assert_any_call(role="user", content="clean up")
+    mocks["mem"].return_value.record_event.assert_any_call(
+        persona="actor",
+        loop_id="loop-1",
+        kind="user_input",
+        visibility="external",
+        content="clean up",
+    )
     mock_actor.execute.assert_called()
-    mocks["mem"].return_value.record.assert_any_call(
-        role="assistant", content="Task done"
+    mocks["mem"].return_value.record_event.assert_any_call(
+        persona="actor",
+        loop_id="loop-1",
+        kind="actor_output",
+        visibility="external",
+        content="Task done",
+    )
+    mocks["mem"].return_value.finalize_loop.assert_called_once_with(
+        persona="actor", loop_id="loop-1"
     )
     assert result == "Task done"
 
@@ -114,7 +137,9 @@ def test_agent_learn(mock_dependencies):
     with patch("pathlib.Path.exists", return_value=True):
         agent = Agent(Path("dummy"))
 
-    mocks["mem"].return_value.get_stm_as_string.return_value = "History"
+    mocks[
+        "mem"
+    ].return_value.subconscious_view.return_value.get_recent_stm_as_string.return_value = "History"
     mock_sub.execute.return_value = "New instructions"
 
     agent.learn("Good job")

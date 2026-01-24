@@ -21,7 +21,11 @@ class Agent:
             self.identity = Identity.create_default(agent_id)
             self.identity.save(identity_path)
 
-        self.memory = MemoryContainer()
+        self.memory = MemoryContainer(
+            agent_id=self.identity.agent_id, identity=self.identity
+        )
+        self.actor_memory = self.memory.actor_view()
+        self.subconscious_memory = self.memory.subconscious_view()
         self.skills_lib = SkillsLibrary()
         self.knowledge_lib = KnowledgeLibrary()
 
@@ -32,7 +36,7 @@ class Agent:
 
         self.actor = BasicAgent(
             identity=self.identity,
-            memory=self.memory,
+            memory=self.actor_memory,
             skills_lib=self.skills_lib,
             knowledge_lib=self.knowledge_lib,
             tool_lib=self.tool_lib,
@@ -45,7 +49,7 @@ class Agent:
 
         self.subconscious = BasicAgent(
             identity=self.sub_identity,
-            memory=self.memory,
+            memory=self.subconscious_memory,
             skills_lib=self.skills_lib,
             knowledge_lib=self.knowledge_lib,
             tool_lib=self.tool_lib,
@@ -57,16 +61,30 @@ class Agent:
         """
         Executes a task using the Actor (BasicAgent).
         """
-        self.memory.record(role="user", content=task)
+        loop_id = self.memory.create_loop_id()
+        self.memory.record_event(
+            persona="actor",
+            loop_id=loop_id,
+            kind="user_input",
+            visibility="external",
+            content=task,
+        )
         response = self.actor.execute(task)
-        self.memory.record(role="assistant", content=response)
+        self.memory.record_event(
+            persona="actor",
+            loop_id=loop_id,
+            kind="actor_output",
+            visibility="external",
+            content=response,
+        )
+        self.memory.finalize_loop(persona="actor", loop_id=loop_id)
         return response
 
     def learn(self, feedback: str) -> str:
         """
         Triggers the learning cycle: Subconscious analyzes logs + feedback.
         """
-        recent_logs = self.memory.get_stm_as_string()
+        recent_logs = self.subconscious_memory.get_recent_stm_as_string(limit=1)
         prompt = f"""
         Analyze the recent interaction logs and the user's feedback: '{feedback}'.
         Logs:
