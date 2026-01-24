@@ -17,7 +17,7 @@
 - [x] Update `README.md` Python requirement to match `pyproject.toml`.
 
 ## Phase 2: Agent Pipeline Decomposition
-- [ ] Create `PromptBuilder` class with explicit inputs (identity, system prompts, context).
+- [x] Create `PromptBuilder` class with explicit inputs (identity, system prompts, context).
 - [ ] Create `ContextRetriever` class that reads `MemoryView` + `KnowledgeLibrary`.
 - [ ] Create `ToolRunner` class that invokes tools and returns structured results.
 - [ ] Define dataclass for agent step inputs/outputs (e.g., `AgentContext`).
