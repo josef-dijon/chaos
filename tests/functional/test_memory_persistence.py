@@ -1,7 +1,7 @@
 from agent_of_chaos.cli.main import app
 
 
-def test_memory_persistence(cli_runner, workspace):
+def test_memory_persistence(cli_runner, workspace, vcr_cassette):
     # Initialize
     cli_runner.invoke(app, ["init"])
 

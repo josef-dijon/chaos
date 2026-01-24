@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 
 
-def test_learning_circuit(cli_runner, workspace):
+def test_learning_circuit(cli_runner, workspace, vcr_cassette):
     # Initialize
     cli_runner.invoke(app, ["init"])
 

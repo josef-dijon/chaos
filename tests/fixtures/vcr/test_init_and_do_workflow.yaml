@@ -1,0 +1,38 @@
+interactions:
+- request:
+    body: '{}'
+    headers: {}
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"id": "chatcmpl-tool", "object": "chat.completion", "created": 0,
+        "model": "gpt-4o", "choices": [{"index": 0, "message": {"role": "assistant",
+        "content": null, "tool_calls": [{"id": "call-write-file", "type": "function",
+        "function": {"name": "write_file", "arguments": "{\"file_path\": \"func_test.txt\",
+        \"content\": \"Functional Test\"}"}}]}, "finish_reason": "tool_calls"}], "usage":
+        {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2}}'
+    headers:
+      Content-Type:
+      - application/json
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{}'
+    headers: {}
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"id": "chatcmpl-test", "object": "chat.completion", "created": 0,
+        "model": "gpt-4o", "choices": [{"index": 0, "message": {"role": "assistant",
+        "content": "File written successfully."}, "finish_reason": "stop"}], "usage":
+        {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2}}'
+    headers:
+      Content-Type:
+      - application/json
+    status:
+      code: 200
+      message: OK
+version: 1

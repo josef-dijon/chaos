@@ -111,3 +111,15 @@ uv run pytest
 ```
 
 This repository enforces a 95% coverage threshold via pytest settings. Use `uv run pytest --cov` for a verbose coverage report.
+
+### Recording functional test cassettes
+
+Functional tests replay HTTP interactions from VCR cassettes stored in `tests/fixtures/vcr`. Recording is opt-in and disabled by default.
+
+```bash
+export OPENAI_API_KEY="your-openai-key"
+export CHAOS_VCR_RECORD=all
+uv run pytest tests/functional
+```
+
+Unset `CHAOS_VCR_RECORD` to return to offline replay mode.
