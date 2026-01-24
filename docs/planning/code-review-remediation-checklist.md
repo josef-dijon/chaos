@@ -8,7 +8,7 @@
 - [x] Define acceptance criteria for each refactor phase and share with stakeholders.
 
 ## Phase 1: Configuration & Path Centralization
-- [ ] Add a `ConfigProvider` (or factory) to construct `Config` without import-time side effects.
+- [x] Add a `ConfigProvider` (or factory) to construct `Config` without import-time side effects.
 - [ ] Remove `settings = Config.load()` from module import paths.
 - [ ] Add centralized helper for identity file path: `.chaos/identities/<agent_id>.identity.json`.
 - [ ] Add centralized helper for memory paths (chroma + raw db) using `Config`.
