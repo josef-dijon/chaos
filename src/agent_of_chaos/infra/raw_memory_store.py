@@ -387,27 +387,26 @@ class RawMemoryStore:
             The STM entry id.
         """
         metadata_json = json.dumps(metadata or {})
-        existing = self.connection.execute(
-            """
-            SELECT id FROM stm_entries
-            WHERE agent_id = ? AND persona = ? AND loop_id = ?
-            """,
-            (agent_id, persona, loop_id),
-        ).fetchone()
+        with self.connection:
+            existing = self.connection.execute(
+                """
+                SELECT id FROM stm_entries
+                WHERE agent_id = ? AND persona = ? AND loop_id = ?
+                """,
+                (agent_id, persona, loop_id),
+            ).fetchone()
 
-        if existing:
-            stm_id = existing["id"]
-            with self.connection:
+            if existing:
+                stm_id = existing["id"]
                 self.connection.execute(
                     "DELETE FROM stm_ltm_map WHERE stm_id = ?", (stm_id,)
                 )
                 self.connection.execute(
                     "DELETE FROM stm_entries WHERE id = ?", (stm_id,)
                 )
-        else:
-            stm_id = str(uuid4())
+            else:
+                stm_id = str(uuid4())
 
-        with self.connection:
             self.connection.execute(
                 """
                 INSERT INTO stm_entries (

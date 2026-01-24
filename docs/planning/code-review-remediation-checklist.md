@@ -32,7 +32,7 @@
 - [x] Add explicit schema or enum for memory event types (avoid ad-hoc strings).
 - [x] Implement bounded STM strategy (truncate or summarize at max tokens/lines).
 - [x] Add `RawMemoryStore.close()` and ensure it is called on shutdown.
-- [ ] Wrap STM delete + insert inside an explicit transaction.
+- [x] Wrap STM delete + insert inside an explicit transaction.
 - [ ] Surface vector store upsert failures to callers or mark embed status for retry.
 - [ ] Add tests covering STM summarization bounds and tool-call memory retention.
 
