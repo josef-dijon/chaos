@@ -4,16 +4,10 @@ from pathlib import Path
 from agent_of_chaos.config import Config
 from agent_of_chaos.config_provider import ConfigProvider
 from agent_of_chaos.domain.identity import Identity, agent_id_from_path
+from agent_of_chaos.domain.memory_event_kind import MemoryEventKind
 
 from agent_of_chaos.infra.memory import MemoryContainer
-from agent_of_chaos.infra.memory_container import (
-    EVENT_KIND_ACTOR_OUTPUT,
-    EVENT_KIND_FEEDBACK,
-    EVENT_KIND_TOOL_CALL,
-    EVENT_KIND_TOOL_OUTPUT,
-    EVENT_KIND_USER_INPUT,
-    VISIBILITY_EXTERNAL,
-)
+from agent_of_chaos.infra.memory_container import VISIBILITY_EXTERNAL
 from agent_of_chaos.infra.skills import SkillsLibrary
 from agent_of_chaos.infra.knowledge import KnowledgeLibrary
 from agent_of_chaos.infra.tools import ToolLibrary, FileReadTool, FileWriteTool
@@ -83,13 +77,13 @@ class Agent:
         self.memory.record_event(
             persona="actor",
             loop_id=loop_id,
-            kind=EVENT_KIND_USER_INPUT,
+            kind=MemoryEventKind.USER_INPUT,
             visibility=VISIBILITY_EXTERNAL,
             content=task,
         )
         response, tool_events = self.actor.execute_with_events(task)
         for event in tool_events:
-            if event["kind"] == EVENT_KIND_TOOL_CALL:
+            if event["kind"] == MemoryEventKind.TOOL_CALL:
                 tool_args = event.get("args") or {}
                 content = f"{event.get('name')} {json.dumps(tool_args, sort_keys=True)}"
                 metadata = {
@@ -100,12 +94,12 @@ class Agent:
                 self.memory.record_event(
                     persona="actor",
                     loop_id=loop_id,
-                    kind=EVENT_KIND_TOOL_CALL,
+                    kind=MemoryEventKind.TOOL_CALL,
                     visibility=VISIBILITY_EXTERNAL,
                     content=content,
                     metadata=metadata,
                 )
-            if event["kind"] == EVENT_KIND_TOOL_OUTPUT:
+            if event["kind"] == MemoryEventKind.TOOL_OUTPUT:
                 metadata = {
                     "tool_name": event.get("name"),
                     "tool_call_id": event.get("id"),
@@ -113,7 +107,7 @@ class Agent:
                 self.memory.record_event(
                     persona="actor",
                     loop_id=loop_id,
-                    kind=EVENT_KIND_TOOL_OUTPUT,
+                    kind=MemoryEventKind.TOOL_OUTPUT,
                     visibility=VISIBILITY_EXTERNAL,
                     content=str(event.get("output")),
                     metadata=metadata,
@@ -121,7 +115,7 @@ class Agent:
         self.memory.record_event(
             persona="actor",
             loop_id=loop_id,
-            kind=EVENT_KIND_ACTOR_OUTPUT,
+            kind=MemoryEventKind.ACTOR_OUTPUT,
             visibility=VISIBILITY_EXTERNAL,
             content=response,
         )
@@ -136,7 +130,7 @@ class Agent:
         self.memory.record_event(
             persona="subconscious",
             loop_id=loop_id,
-            kind=EVENT_KIND_FEEDBACK,
+            kind=MemoryEventKind.FEEDBACK,
             visibility=VISIBILITY_EXTERNAL,
             content=feedback,
         )

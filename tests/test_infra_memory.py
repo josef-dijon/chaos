@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from agent_of_chaos.config import Config
+from agent_of_chaos.domain.memory_event_kind import MemoryEventKind
 from agent_of_chaos.domain.identity import Identity
 from agent_of_chaos.infra.memory import MemoryContainer
 from agent_of_chaos.infra.raw_memory_store import IdeticEvent
@@ -73,7 +74,7 @@ def test_record_event_updates_vector_store(memory_deps):
     mem.record_event(
         persona="actor",
         loop_id="loop-1",
-        kind="user_input",
+        kind=MemoryEventKind.USER_INPUT,
         visibility="external",
         content="Hello",
         metadata={"source": "unit-test"},
@@ -106,7 +107,7 @@ def test_record_event_vector_store_error(memory_deps):
         mem.record_event(
             persona="actor",
             loop_id="loop-1",
-            kind="user_input",
+            kind=MemoryEventKind.USER_INPUT,
             visibility="external",
             content="Hello",
         )
@@ -155,7 +156,7 @@ def test_finalize_loop_creates_summary(memory_deps):
             agent_id="agent",
             persona="actor",
             loop_id="loop-1",
-            kind="user_input",
+            kind=MemoryEventKind.USER_INPUT,
             visibility="external",
             content="Hello",
             metadata={},
@@ -166,7 +167,7 @@ def test_finalize_loop_creates_summary(memory_deps):
             agent_id="agent",
             persona="actor",
             loop_id="loop-1",
-            kind="actor_output",
+            kind=MemoryEventKind.ACTOR_OUTPUT,
             visibility="external",
             content="Hi",
             metadata={},

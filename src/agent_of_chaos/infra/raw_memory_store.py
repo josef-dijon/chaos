@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 from uuid import uuid4
 
+from agent_of_chaos.domain.memory_event_kind import MemoryEventKind
 from agent_of_chaos.infra.utils import logger
 
 RAW_SCHEMA_VERSION = "1"
@@ -26,7 +27,7 @@ class IdeticEvent:
     agent_id: str
     persona: str
     loop_id: str
-    kind: str
+    kind: MemoryEventKind | str
     visibility: str
     content: str
     metadata: Dict[str, Any]
@@ -196,7 +197,7 @@ class RawMemoryStore:
         agent_id: str,
         persona: str,
         loop_id: str,
-        kind: str,
+        kind: MemoryEventKind | str,
         visibility: str,
         content: str,
         metadata: Optional[Dict[str, Any]] = None,
@@ -223,6 +224,13 @@ class RawMemoryStore:
         event_id = str(uuid4())
         ltm_id = str(uuid4())
         ts = datetime.now(timezone.utc).isoformat()
+        if not isinstance(kind, MemoryEventKind):
+            try:
+                kind = MemoryEventKind(kind)
+            except ValueError:
+                logger.warning(f"Unknown event kind recorded: {kind}")
+                kind = MemoryEventKind.USER_INPUT
+        kind_value = kind.value
         metadata_json = json.dumps(metadata or {})
         ltm_summary = summary or content
 
@@ -239,7 +247,7 @@ class RawMemoryStore:
                     agent_id,
                     persona,
                     loop_id,
-                    kind,
+                    kind_value,
                     visibility,
                     content,
                     metadata_json,
@@ -259,7 +267,7 @@ class RawMemoryStore:
                     agent_id,
                     persona,
                     loop_id,
-                    kind,
+                    kind_value,
                     visibility,
                     ltm_summary,
                     importance,

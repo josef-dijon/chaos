@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+from agent_of_chaos.domain.memory_event_kind import MemoryEventKind
 from agent_of_chaos.infra.raw_memory_store import RawMemoryStore
 
 
@@ -13,7 +14,7 @@ def test_raw_memory_store_records_events(tmp_path: Path) -> None:
             agent_id="agent",
             persona="actor",
             loop_id="loop-1",
-            kind="user_input",
+            kind=MemoryEventKind.USER_INPUT,
             visibility="external",
             content="Hello",
         )
@@ -38,7 +39,7 @@ def test_raw_memory_store_stm_entries(tmp_path: Path) -> None:
             agent_id="agent",
             persona="actor",
             loop_id="loop-1",
-            kind="user_input",
+            kind=MemoryEventKind.USER_INPUT,
             visibility="external",
             content="Hello",
         )
@@ -46,7 +47,7 @@ def test_raw_memory_store_stm_entries(tmp_path: Path) -> None:
             agent_id="agent",
             persona="actor",
             loop_id="loop-1",
-            kind="actor_output",
+            kind=MemoryEventKind.ACTOR_OUTPUT,
             visibility="external",
             content="Hi",
         )

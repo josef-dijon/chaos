@@ -9,6 +9,7 @@ from langchain_core.messages import (
 )
 from langchain_openai import ChatOpenAI
 from agent_of_chaos.domain.identity import Identity
+from agent_of_chaos.domain.memory_event_kind import MemoryEventKind
 from agent_of_chaos.infra.memory import MemoryView
 from agent_of_chaos.infra.skills import SkillsLibrary
 from agent_of_chaos.infra.knowledge import KnowledgeLibrary
@@ -184,7 +185,7 @@ class BasicAgent:
                 for tool_call in message.tool_calls:
                     events.append(
                         {
-                            "kind": "tool_call",
+                            "kind": MemoryEventKind.TOOL_CALL,
                             "id": tool_call.get("id"),
                             "name": tool_call.get("name"),
                             "args": tool_call.get("args"),
@@ -193,7 +194,7 @@ class BasicAgent:
             if isinstance(message, ToolMessage):
                 events.append(
                     {
-                        "kind": "tool_output",
+                        "kind": MemoryEventKind.TOOL_OUTPUT,
                         "id": message.tool_call_id,
                         "name": message.name,
                         "output": message.content,

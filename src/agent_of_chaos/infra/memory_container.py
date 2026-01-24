@@ -10,22 +10,12 @@ import chromadb
 
 from agent_of_chaos.config import Config
 from agent_of_chaos.domain.identity import Identity
+from agent_of_chaos.domain.memory_event_kind import MemoryEventKind
 from agent_of_chaos.infra.raw_memory_store import RawMemoryStore
 from agent_of_chaos.infra.utils import logger
 
-EVENT_KIND_USER_INPUT = "user_input"
-EVENT_KIND_ACTOR_OUTPUT = "actor_output"
-EVENT_KIND_TOOL_CALL = "tool_call"
-EVENT_KIND_TOOL_OUTPUT = "tool_output"
-EVENT_KIND_FEEDBACK = "feedback"
 VISIBILITY_EXTERNAL = "external"
-EVENT_KINDS = {
-    EVENT_KIND_USER_INPUT,
-    EVENT_KIND_ACTOR_OUTPUT,
-    EVENT_KIND_TOOL_CALL,
-    EVENT_KIND_TOOL_OUTPUT,
-    EVENT_KIND_FEEDBACK,
-}
+EVENT_KINDS = set(MemoryEventKind)
 
 
 class MemoryContainer:
@@ -66,7 +56,7 @@ class MemoryContainer:
         self,
         persona: str,
         loop_id: str,
-        kind: str,
+        kind: MemoryEventKind | str,
         visibility: str,
         content: str,
         metadata: Optional[Dict[str, Any]] = None,
@@ -89,8 +79,15 @@ class MemoryContainer:
         Returns:
             The LTM entry id, if created.
         """
+        if not isinstance(kind, MemoryEventKind):
+            try:
+                kind = MemoryEventKind(kind)
+            except ValueError:
+                logger.warning(f"Unknown event kind recorded: {kind}")
+                return None
         if kind not in EVENT_KINDS:
             logger.warning(f"Unknown event kind recorded: {kind}")
+        kind_value = kind.value
         try:
             _, ltm_id, ts = self.raw_store.record_event(
                 agent_id=self.agent_id,
@@ -110,7 +107,7 @@ class MemoryContainer:
         metadata_payload = {
             "agent_id": self.agent_id,
             "persona": persona,
-            "kind": kind,
+            "kind": kind_value,
             "visibility": visibility,
             "ts": ts,
             "loop_id": loop_id,
@@ -147,7 +144,14 @@ class MemoryContainer:
 
         ts_start = events[0].ts
         ts_end = events[-1].ts
-        summary_lines = [f"{event.kind}: {event.content}" for event in events]
+        summary_lines = []
+        for event in events:
+            kind_value = (
+                event.kind.value
+                if isinstance(event.kind, MemoryEventKind)
+                else event.kind
+            )
+            summary_lines.append(f"{kind_value}: {event.content}")
         summary = "\n".join(summary_lines)
         ltm_ids = self.raw_store.list_ltm_ids(
             agent_id=self.agent_id, persona=persona, loop_id=loop_id

@@ -2,14 +2,8 @@ import pytest
 from unittest.mock import MagicMock, patch, call, ANY
 from pathlib import Path
 from agent_of_chaos.core.agent import Agent
-from agent_of_chaos.infra.memory_container import (
-    EVENT_KIND_ACTOR_OUTPUT,
-    EVENT_KIND_FEEDBACK,
-    EVENT_KIND_TOOL_CALL,
-    EVENT_KIND_TOOL_OUTPUT,
-    EVENT_KIND_USER_INPUT,
-    VISIBILITY_EXTERNAL,
-)
+from agent_of_chaos.domain.memory_event_kind import MemoryEventKind
+from agent_of_chaos.infra.memory_container import VISIBILITY_EXTERNAL
 
 
 @pytest.fixture
@@ -124,13 +118,13 @@ def test_agent_do(mock_dependencies):
         "Task done",
         [
             {
-                "kind": EVENT_KIND_TOOL_CALL,
+                "kind": MemoryEventKind.TOOL_CALL,
                 "id": "t1",
                 "name": "read",
                 "args": {"path": "file"},
             },
             {
-                "kind": EVENT_KIND_TOOL_OUTPUT,
+                "kind": MemoryEventKind.TOOL_OUTPUT,
                 "id": "t1",
                 "name": "read",
                 "output": "content",
@@ -143,7 +137,7 @@ def test_agent_do(mock_dependencies):
     mocks["mem"].return_value.record_event.assert_any_call(
         persona="actor",
         loop_id="loop-1",
-        kind=EVENT_KIND_USER_INPUT,
+        kind=MemoryEventKind.USER_INPUT,
         visibility=VISIBILITY_EXTERNAL,
         content="clean up",
     )
@@ -151,7 +145,7 @@ def test_agent_do(mock_dependencies):
     mocks["mem"].return_value.record_event.assert_any_call(
         persona="actor",
         loop_id="loop-1",
-        kind=EVENT_KIND_TOOL_CALL,
+        kind=MemoryEventKind.TOOL_CALL,
         visibility=VISIBILITY_EXTERNAL,
         content='read {"path": "file"}',
         metadata={
@@ -163,7 +157,7 @@ def test_agent_do(mock_dependencies):
     mocks["mem"].return_value.record_event.assert_any_call(
         persona="actor",
         loop_id="loop-1",
-        kind=EVENT_KIND_TOOL_OUTPUT,
+        kind=MemoryEventKind.TOOL_OUTPUT,
         visibility=VISIBILITY_EXTERNAL,
         content="content",
         metadata={
@@ -174,7 +168,7 @@ def test_agent_do(mock_dependencies):
     mocks["mem"].return_value.record_event.assert_any_call(
         persona="actor",
         loop_id="loop-1",
-        kind=EVENT_KIND_ACTOR_OUTPUT,
+        kind=MemoryEventKind.ACTOR_OUTPUT,
         visibility=VISIBILITY_EXTERNAL,
         content="Task done",
     )
@@ -204,7 +198,7 @@ def test_agent_learn(mock_dependencies):
     mocks["mem"].return_value.record_event.assert_any_call(
         persona="subconscious",
         loop_id="loop-2",
-        kind=EVENT_KIND_FEEDBACK,
+        kind=MemoryEventKind.FEEDBACK,
         visibility=VISIBILITY_EXTERNAL,
         content="Good job",
     )
