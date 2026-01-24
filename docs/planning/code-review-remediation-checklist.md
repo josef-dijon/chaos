@@ -23,7 +23,7 @@
 - [x] Define dataclass for agent step inputs/outputs (e.g., `AgentContext`).
 - [x] Update `BasicAgent` to orchestrate the components only.
 - [x] Add unit tests for each component (prompt ordering, context composition, tool run errors).
-- [ ] Add docstrings for each new class and method.
+- [x] Add docstrings for each new class and method.
 
 ## Phase 3: Memory Model Fidelity
 - [ ] Add memory event types for `tool_call` and `tool_output` in `Agent.do()` flow.
