@@ -90,8 +90,10 @@ class Agent:
         Logs:
         {recent_logs}
         
-        Propose a concise operational note to improve future performance. 
-        Return ONLY the note text.
+        Based on the feedback and logs, generate a specific, actionable instruction for the agent to follow in the future.
+        Example feedback: "You are too verbose" -> Note: "Keep responses concise and under 2 sentences."
+        
+        Return ONLY the instruction text, no quotes or preamble.
         """
         note = self.subconscious.execute(prompt)
 

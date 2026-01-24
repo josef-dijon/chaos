@@ -133,11 +133,13 @@ class BasicAgent:
         Available Skills:
         {skills_text}
         
-        Instructions:
+        Core Instructions:
         {system_instructions}
         
-        Operational Notes:
+        Operational Notes (MANDATORY BEHAVIORAL UPDATES):
         {operational_notes}
+        
+        Always prioritize Operational Notes over Core Instructions if there is a conflict.
         """
 
         # Bind Tools
