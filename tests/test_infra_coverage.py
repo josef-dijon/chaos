@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 from agent_of_chaos.config import Config
 from agent_of_chaos.domain.memory_event_kind import MemoryEventKind
-from agent_of_chaos.domain.identity import Identity
+from agent_of_chaos.domain import Identity
 from agent_of_chaos.infra.memory import MemoryContainer
 
 

@@ -8,7 +8,7 @@ from langchain_core.messages import (
     ToolMessage,
 )
 from langchain_openai import ChatOpenAI
-from agent_of_chaos.domain.identity import Identity
+from agent_of_chaos.domain import Identity
 from agent_of_chaos.domain.memory_event_kind import MemoryEventKind
 from agent_of_chaos.infra.memory import MemoryView
 from agent_of_chaos.infra.skills import SkillsLibrary
@@ -43,6 +43,19 @@ class BasicAgent:
         identity_path: Path,
         persona: str = "actor",
     ):
+        """
+        Initializes the agent with dependencies and identity context.
+
+        Args:
+            identity: The loaded identity definition.
+            config: Runtime configuration values.
+            memory: Memory view for the active persona.
+            skills_lib: Library of available skills.
+            knowledge_lib: Knowledge base access layer.
+            tool_lib: Tool registry for tool invocation.
+            identity_path: Path to the identity JSON file.
+            persona: Persona name (e.g., actor or subconscious).
+        """
         self.identity = identity
         self.config = config
         self.memory = memory
@@ -67,8 +80,15 @@ class BasicAgent:
         )
         self.tool_runner = ToolRunner(self.tool_lib)
         self.graph = self._build_graph()
+        self._tool_events: List[Dict[str, Any]] = []
 
     def _build_graph(self):
+        """
+        Builds the agent graph based on the configured loop definition.
+
+        Returns:
+            The compiled LangGraph graph executor.
+        """
         if self.identity.loop_definition != "default":
             raise ValueError(
                 f"Unsupported loop definition: {self.identity.loop_definition}"
@@ -76,6 +96,12 @@ class BasicAgent:
         return self._build_default_graph()
 
     def _build_default_graph(self):
+        """
+        Builds the default recall-reason-act LangGraph loop.
+
+        Returns:
+            The compiled LangGraph graph executor.
+        """
         builder = StateGraph(AgentState)
         builder.add_node("recall", self.recall)
         builder.add_node("reason", self.reason)
@@ -96,6 +122,9 @@ class BasicAgent:
     def refresh(self) -> None:
         """
         Reloads the identity from disk to pick up patches.
+
+        Returns:
+            None.
         """
         self.identity = Identity.load(self.identity_path)
         self.prompt_builder = PromptBuilder(self.identity)
@@ -110,6 +139,15 @@ class BasicAgent:
             self.graph = self._build_graph()
 
     def should_continue(self, state: AgentState) -> Literal["continue", "end"]:
+        """
+        Determines whether the agent should invoke tools or end the loop.
+
+        Args:
+            state: The current agent graph state.
+
+        Returns:
+            "continue" to invoke tools or "end" to stop the loop.
+        """
         messages = state["messages"]
         last_message = messages[-1]
         if isinstance(last_message, AIMessage) and last_message.tool_calls:
@@ -119,6 +157,12 @@ class BasicAgent:
     def recall(self, state: AgentState) -> Dict[str, Any]:
         """
         Retrieves relevant context from LTM and Knowledge Library.
+
+        Args:
+            state: The current agent graph state.
+
+        Returns:
+            Updated state values containing retrieved context.
         """
         messages = state["messages"]
         context = self.context_retriever.retrieve(messages)
@@ -127,6 +171,12 @@ class BasicAgent:
     def reason(self, state: AgentState) -> Dict[str, Any]:
         """
         Generates a response based on context and identity.
+
+        Args:
+            state: The current agent graph state.
+
+        Returns:
+            Updated state values containing new model messages.
         """
         # Skills Injection
         available_skills = self.skills_lib.list_skills(
@@ -154,11 +204,18 @@ class BasicAgent:
         )
 
         response = llm_with_tools.invoke(messages)
+        self._tool_events.extend(self._collect_tool_events([response]))
         return {"messages": [response]}
 
     def act(self, state: AgentState) -> Dict[str, Any]:
         """
         Executes tool calls requested by the LLM.
+
+        Args:
+            state: The current agent graph state.
+
+        Returns:
+            Updated state values containing tool output messages.
         """
         messages = state["messages"]
         last_message = messages[-1]
@@ -167,6 +224,7 @@ class BasicAgent:
             return {"messages": []}
 
         tool_results = self.tool_runner.run(last_message.tool_calls)
+        self._tool_events.extend(self._collect_tool_events(tool_results))
         return {"messages": tool_results}
 
     def _collect_tool_events(self, messages: List[BaseMessage]) -> List[Dict[str, Any]]:
@@ -213,6 +271,7 @@ class BasicAgent:
             The output text and a list of tool call/output events.
         """
         self.refresh()
+        self._tool_events = []
         context = AgentContext(messages=[HumanMessage(content=task)])
         initial_state: AgentState = {
             "messages": context.messages,
@@ -220,13 +279,19 @@ class BasicAgent:
         }
         result = self.graph.invoke(initial_state)
         messages = result["messages"]
-        tool_events = self._collect_tool_events(messages)
+        tool_events = list(self._tool_events)
         last_message = messages[-1]
         return str(last_message.content), tool_events
 
     def execute(self, task: str) -> str:
         """
         Executes a task through the agentic loop.
+
+        Args:
+            task: The user task or prompt.
+
+        Returns:
+            The generated output text.
         """
         output, _ = self.execute_with_events(task)
         return output

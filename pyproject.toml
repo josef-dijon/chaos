@@ -30,3 +30,4 @@ package = true
 [tool.pytest.ini_options]
 pythonpath = "src"
 testpaths = ["tests"]
+addopts = "--cov=agent_of_chaos --cov-report=term-missing --cov-fail-under=95"

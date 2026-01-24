@@ -1,4 +1,4 @@
-from agent_of_chaos.domain.identity import (
+from agent_of_chaos.domain import (
     Identity,
     Profile,
     Instructions,

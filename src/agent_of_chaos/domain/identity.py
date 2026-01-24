@@ -1,7 +1,16 @@
-from pydantic import BaseModel, Field, ConfigDict, PrivateAttr, model_validator
 from pathlib import Path
-from typing import Dict, List, Optional
 import json
+from typing import List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
+
+from agent_of_chaos.domain.instructions import Instructions
+from agent_of_chaos.domain.memory_config import MemoryConfig
+from agent_of_chaos.domain.memory_persona_config import MemoryPersonaConfig
+from agent_of_chaos.domain.profile import Profile
+from agent_of_chaos.domain.search_weights import SearchWeights
+from agent_of_chaos.domain.stm_search_config import StmSearchConfig
+from agent_of_chaos.domain.tuning_policy import TuningPolicy
 
 SCHEMA_VERSION = "1.0"
 
@@ -23,116 +32,6 @@ def agent_id_from_path(identity_path: Path) -> str:
     if filename.endswith(".json"):
         return filename[: -len(".json")]
     return identity_path.stem
-
-
-class Profile(BaseModel):
-    """
-    Represents the immutable core description of an agent.
-    """
-
-    name: Optional[str] = Field(
-        default=None, description="Optional human-friendly display name."
-    )
-    role: str = Field(..., description="The primary role or function of the agent.")
-    core_values: List[str] = Field(
-        default_factory=list,
-        description="List of core values guiding the agent's behavior.",
-    )
-
-    model_config = ConfigDict(extra="forbid")
-
-
-class Instructions(BaseModel):
-    """
-    Represents the mutable operational instructions of an agent.
-    """
-
-    operational_notes: List[str] = Field(
-        default_factory=list, description="Mutable notes learned from experience."
-    )
-    system_prompts: List[str] = Field(
-        default_factory=list, description="Base system prompts defining behavior."
-    )
-
-    model_config = ConfigDict(extra="forbid")
-
-
-class SearchWeights(BaseModel):
-    """
-    Defines weighting configuration for short-term memory searches.
-    """
-
-    similarity: float = Field(default=1.0, description="Weight for similarity ranking.")
-    recency: float = Field(default=1.0, description="Weight for recency scoring.")
-    kind_boosts: Dict[str, float] = Field(
-        default_factory=dict, description="Boosts applied per event kind."
-    )
-    visibility_boosts: Dict[str, float] = Field(
-        default_factory=dict, description="Boosts applied per visibility category."
-    )
-
-    model_config = ConfigDict(extra="forbid")
-
-
-class StmSearchConfig(BaseModel):
-    """
-    Controls the search behavior for short-term memory retrieval.
-    """
-
-    engine: str = Field(default="rapidfuzz", description="Search engine identifier.")
-    algorithm: str = Field(default="token_set_ratio", description="Search algorithm.")
-    threshold: float = Field(default=60, description="Search similarity threshold.")
-    top_k: int = Field(default=8, description="Maximum results to return.")
-    recency_half_life_seconds: int = Field(
-        default=86400, description="Half-life for recency decay weighting."
-    )
-    weights: SearchWeights = Field(
-        default_factory=SearchWeights, description="Weight tuning for ranking."
-    )
-
-    model_config = ConfigDict(extra="forbid")
-
-
-class MemoryPersonaConfig(BaseModel):
-    """
-    Defines memory configuration for a persona.
-    """
-
-    ltm_collection: str = Field(
-        ..., description="Chroma collection name for long-term memory."
-    )
-    stm_window_size: int = Field(..., description="Short-term memory window size.")
-    stm_search: StmSearchConfig = Field(
-        ..., description="Search configuration for short-term memory."
-    )
-
-    model_config = ConfigDict(extra="forbid")
-
-
-class MemoryConfig(BaseModel):
-    """
-    Defines memory configuration for actor and subconscious personas.
-    """
-
-    actor: MemoryPersonaConfig
-    subconscious: MemoryPersonaConfig
-
-    model_config = ConfigDict(extra="forbid")
-
-
-class TuningPolicy(BaseModel):
-    """
-    Controls which subconscious tuning operations are permitted.
-    """
-
-    allow_subconscious_identity_updates: bool = Field(
-        default=True, description="Allow subconscious to update identity instructions."
-    )
-    allow_subconscious_memory_tuning: bool = Field(
-        default=False, description="Allow subconscious to tune memory configuration."
-    )
-
-    model_config = ConfigDict(extra="forbid")
 
 
 def _default_actor_memory_config() -> MemoryPersonaConfig:
@@ -232,6 +131,21 @@ def _memory_config_for_agent(agent_id: str) -> MemoryConfig:
 class Identity(BaseModel):
     """
     The persistent state of an agent, containing profile, instructions, and capabilities.
+
+    Args:
+        schema_version: Identity schema version.
+        profile: Immutable identity profile.
+        instructions: Mutable operational instructions.
+        loop_definition: Loop definition identifier.
+        tool_manifest: List of allowed tool names.
+        memory: Memory configuration for actor and subconscious.
+        tuning_policy: Identity tuning policy settings.
+        skills_whitelist: Allowed skills (null = all).
+        skills_blacklist: Forbidden skills.
+        knowledge_whitelist: Allowed knowledge domains (null = all).
+        knowledge_blacklist: Forbidden knowledge domains.
+        tool_whitelist: Allowed tools (null = all).
+        tool_blacklist: Forbidden tools.
     """
 
     schema_version: str = Field(

@@ -11,6 +11,13 @@ class KnowledgeLibrary:
     """
 
     def __init__(self, config: Config, collection_name: str = "knowledge_base"):
+        """
+        Initializes the knowledge library backed by ChromaDB.
+
+        Args:
+            config: Application configuration providing the storage path.
+            collection_name: The Chroma collection name to use.
+        """
         self.chroma_client = chromadb.PersistentClient(
             path=str(config.get_chroma_db_path())
         )
@@ -23,6 +30,11 @@ class KnowledgeLibrary:
     ) -> None:
         """
         Adds a document to the knowledge base.
+
+        Args:
+            content: The document text to store.
+            domain: The domain label for access control.
+            metadata: Optional metadata to attach.
         """
         if metadata is None:
             metadata = {}
@@ -45,6 +57,15 @@ class KnowledgeLibrary:
     ) -> List[str]:
         """
         Searches for knowledge, adhering to access control.
+
+        Args:
+            query: The search query string.
+            n_results: Maximum number of documents to return.
+            whitelist: Allowed domain list.
+            blacklist: Forbidden domain list.
+
+        Returns:
+            A list of matching document strings.
         """
         where_filter = {}
 

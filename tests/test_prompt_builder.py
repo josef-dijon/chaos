@@ -2,7 +2,7 @@
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from agent_of_chaos.domain.identity import Identity
+from agent_of_chaos.domain import Identity
 from agent_of_chaos.domain.skill import Skill
 from agent_of_chaos.engine.prompt_builder import PromptBuilder
 
@@ -16,6 +16,7 @@ def test_build_system_prompt_includes_identity_and_notes() -> None:
     builder = PromptBuilder(identity)
     prompt = builder.build_system_prompt(skills)
 
+    assert identity.profile.name is not None
     assert identity.profile.name in prompt
     assert identity.profile.role in prompt
     assert "Follow the runbook." in prompt

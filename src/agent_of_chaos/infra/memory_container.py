@@ -3,16 +3,21 @@
 from __future__ import annotations
 
 from collections import deque
-from typing import Any, Dict, Iterable, List, Optional
+import json
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional
 from uuid import uuid4
 
 import chromadb
 
 from agent_of_chaos.config import Config
-from agent_of_chaos.domain.identity import Identity
+from agent_of_chaos.domain import Identity
 from agent_of_chaos.domain.memory_event_kind import MemoryEventKind
 from agent_of_chaos.infra.raw_memory_store import RawMemoryStore
 from agent_of_chaos.infra.utils import logger
+
+if TYPE_CHECKING:
+    from agent_of_chaos.infra.actor_memory_view import ActorMemoryView
+    from agent_of_chaos.infra.subconscious_memory_view import SubconsciousMemoryView
 
 VISIBILITY_EXTERNAL = "external"
 STM_MAX_LINES = 50
@@ -52,6 +57,20 @@ class MemoryContainer:
             A unique loop id string.
         """
         return str(uuid4())
+
+    def _normalize_metadata_value(self, value: Any) -> Any:
+        """
+        Normalizes metadata values for Chroma compatibility.
+
+        Args:
+            value: The metadata value to normalize.
+
+        Returns:
+            A scalar or serialized string value.
+        """
+        if isinstance(value, (str, int, float, bool)) or value is None:
+            return value
+        return json.dumps(value, default=str)
 
     def record_event(
         self,
@@ -116,6 +135,10 @@ class MemoryContainer:
         }
         if metadata:
             metadata_payload.update(metadata)
+        metadata_payload = {
+            key: self._normalize_metadata_value(value)
+            for key, value in metadata_payload.items()
+        }
 
         try:
             collection = self._collections[persona]
@@ -194,7 +217,12 @@ class MemoryContainer:
                 response = collection.query(
                     query_texts=[query],
                     n_results=n_results,
-                    where={"agent_id": self.agent_id, "persona": persona},
+                    where={
+                        "$and": [
+                            {"agent_id": {"$eq": self.agent_id}},
+                            {"persona": {"$eq": persona}},
+                        ]
+                    },
                 )
                 documents = response.get("documents") if response else None
                 if documents and documents[0]:
@@ -237,7 +265,7 @@ class MemoryContainer:
         if callable(close_method):
             close_method()
 
-    def actor_view(self) -> "ActorMemoryView":
+    def actor_view(self) -> ActorMemoryView:
         """
         Returns a persona-scoped actor memory view.
 
@@ -248,7 +276,7 @@ class MemoryContainer:
 
         return ActorMemoryView(self)
 
-    def subconscious_view(self) -> "SubconsciousMemoryView":
+    def subconscious_view(self) -> SubconsciousMemoryView:
         """
         Returns a persona-scoped subconscious memory view.
 

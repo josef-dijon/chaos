@@ -4,7 +4,7 @@ from typing import List
 
 from langchain_core.messages import BaseMessage, HumanMessage
 
-from agent_of_chaos.domain.identity import Identity
+from agent_of_chaos.domain import Identity
 from agent_of_chaos.infra.knowledge import KnowledgeLibrary
 from agent_of_chaos.infra.memory import MemoryView
 

@@ -1,3 +1,5 @@
+"""Logging utilities for infrastructure modules."""
+
 import logging
 from rich.logging import RichHandler
 
@@ -5,6 +7,12 @@ from rich.logging import RichHandler
 def setup_logging(level: str = "INFO") -> logging.Logger:
     """
     Configures and returns a logger with Rich formatting.
+
+    Args:
+        level: The logging level name to configure.
+
+    Returns:
+        The configured logger instance.
     """
     logging.basicConfig(
         level=level,

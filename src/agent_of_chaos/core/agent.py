@@ -3,7 +3,7 @@ from pathlib import Path
 
 from agent_of_chaos.config import Config
 from agent_of_chaos.config_provider import ConfigProvider
-from agent_of_chaos.domain.identity import Identity, agent_id_from_path
+from agent_of_chaos.domain import Identity, agent_id_from_path
 from agent_of_chaos.domain.memory_event_kind import MemoryEventKind
 
 from agent_of_chaos.infra.memory import MemoryContainer

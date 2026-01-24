@@ -101,3 +101,13 @@ uv sync
 ## Development Standards
 
 We follow strict development protocols to ensure high coverage and architectural integrity. See [AGENTS.md](AGENTS.md) for our contributor guide and workflow.
+
+## Testing
+
+Run tests with coverage enforcement:
+
+```bash
+uv run pytest
+```
+
+This repository enforces a 95% coverage threshold via pytest settings. Use `uv run pytest --cov` for a verbose coverage report.

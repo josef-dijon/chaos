@@ -6,7 +6,7 @@ import pytest
 
 from agent_of_chaos.config import Config
 from agent_of_chaos.domain.memory_event_kind import MemoryEventKind
-from agent_of_chaos.domain.identity import Identity
+from agent_of_chaos.domain import Identity
 from agent_of_chaos.infra.memory import MemoryContainer
 from agent_of_chaos.infra.memory_container import STM_MAX_LINES
 from agent_of_chaos.infra.raw_memory_store import IdeticEvent
@@ -119,6 +119,26 @@ def test_record_event_vector_store_error(memory_deps):
     )
 
 
+def test_record_event_rejects_unknown_kind(memory_deps):
+    """Returns None when an unknown event kind is recorded."""
+    mem = MemoryContainer(
+        agent_id="agent",
+        identity=memory_deps["identity"],
+        config=memory_deps["config"],
+    )
+
+    result = mem.record_event(
+        persona="actor",
+        loop_id="loop-1",
+        kind="mystery",
+        visibility="external",
+        content="Hello",
+    )
+
+    assert result is None
+    memory_deps["raw"].return_value.record_event.assert_not_called()
+
+
 def test_retrieve_for_personas(memory_deps):
     mem = MemoryContainer(
         agent_id="agent",
@@ -135,15 +155,27 @@ def test_retrieve_for_personas(memory_deps):
 
     assert actor_results == ["doc1"]
     assert subconscious_results == ["doc1", "doc2"]
+    actor_where = {
+        "$and": [
+            {"agent_id": {"$eq": "agent"}},
+            {"persona": {"$eq": "actor"}},
+        ]
+    }
     memory_deps["actor_collection"].query.assert_called_with(
         query_texts=["query"],
         n_results=5,
-        where={"agent_id": "agent", "persona": "actor"},
+        where=actor_where,
     )
+    subconscious_where = {
+        "$and": [
+            {"agent_id": {"$eq": "agent"}},
+            {"persona": {"$eq": "subconscious"}},
+        ]
+    }
     memory_deps["subconscious_collection"].query.assert_called_with(
         query_texts=["query"],
         n_results=5,
-        where={"agent_id": "agent", "persona": "subconscious"},
+        where=subconscious_where,
     )
 
 

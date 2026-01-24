@@ -12,6 +12,9 @@ class ToolLibrary(Library[BaseTool]):
     """
 
     def __init__(self) -> None:
+        """
+        Initializes an empty tool registry.
+        """
         self._registry: Dict[str, BaseTool] = {}
 
     def register(self, tool: BaseTool) -> None:

@@ -45,29 +45,29 @@
 - [x] Add tests for path validation, size limits, and atomic write behavior.
 
 ## Phase 5: Domain Model Reorganization
-- [ ] Split `Identity`-related Pydantic models into separate files.
-- [ ] Add `src/agent_of_chaos/domain/__init__.py` exports for domain models.
-- [ ] Update imports across code and tests to the new module layout.
-- [ ] Ensure each class has a docstring with params and return values.
+- [x] Split `Identity`-related Pydantic models into separate files.
+- [x] Add `src/agent_of_chaos/domain/__init__.py` exports for domain models.
+- [x] Update imports across code and tests to the new module layout.
+- [x] Ensure each class has a docstring with params and return values.
 
 ## Phase 6: Documentation & Docstrings
-- [ ] Add module docstring to `infra/utils.py` explaining logging side effects.
-- [ ] Add docstrings to `BasicAgent` and its public methods.
-- [ ] Add docstrings to `RawMemoryStore` and persistence methods.
-- [ ] Add docstrings to `KnowledgeLibrary`, `ToolLibrary`, `SkillsLibrary`.
-- [ ] Add docstrings to file tools and their call methods.
-- [ ] Validate docstrings for all new and modified classes/functions.
+- [x] Add module docstring to `infra/utils.py` explaining logging side effects.
+- [x] Add docstrings to `BasicAgent` and its public methods.
+- [x] Add docstrings to `RawMemoryStore` and persistence methods.
+- [x] Add docstrings to `KnowledgeLibrary`, `ToolLibrary`, `SkillsLibrary`.
+- [x] Add docstrings to file tools and their call methods.
+- [x] Validate docstrings for all new and modified classes/functions.
 
 ## Phase 7: Testing, Determinism, and Coverage
-- [ ] Replace live OpenAI calls in functional tests with VCR fixtures.
-- [ ] Add unit test mocks for all LLM invocations.
-- [ ] Add tests for config injection and path helper behavior.
-- [ ] Add tests for new memory event types and schema enforcement.
-- [ ] Add coverage threshold configuration (>=95%).
-- [ ] Update `README.md` with explicit test commands and coverage expectation.
+- [x] Replace live OpenAI calls in functional tests with VCR fixtures.
+- [x] Add unit test mocks for all LLM invocations.
+- [x] Add tests for config injection and path helper behavior.
+- [x] Add tests for new memory event types and schema enforcement.
+- [x] Add coverage threshold configuration (>=95%).
+- [x] Update `README.md` with explicit test commands and coverage expectation.
 
 ## Validation
-- [ ] Run `uv run pytest --cov` and confirm >=95% coverage.
-- [ ] Run CLI `init`, `do`, `learn`, `dream` workflows locally.
-- [ ] Verify LTM/STM retrieval includes tool calls and feedback.
-- [ ] Confirm file tools cannot access paths outside the allowed root.
+- [x] Run `uv run pytest --cov` and confirm >=95% coverage.
+- [x] Run CLI `init`, `do`, `learn`, `dream` workflows locally.
+- [x] Verify LTM/STM retrieval includes tool calls and feedback.
+- [x] Confirm file tools cannot access paths outside the allowed root.

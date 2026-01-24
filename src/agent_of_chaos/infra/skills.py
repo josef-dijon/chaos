@@ -9,6 +9,9 @@ class SkillsLibrary(Library[Skill]):
     """
 
     def __init__(self):
+        """
+        Initializes the skills library with default entries.
+        """
         self._registry: Dict[str, Skill] = {}
         # Pre-load some default skills (Stub)
         self.register(
@@ -27,9 +30,24 @@ class SkillsLibrary(Library[Skill]):
         )
 
     def register(self, skill: Skill) -> None:
+        """
+        Registers a skill in the library.
+
+        Args:
+            skill: The skill instance to register.
+        """
         self._registry[skill.name] = skill
 
     def get_skill(self, name: str) -> Optional[Skill]:
+        """
+        Retrieves a skill by name.
+
+        Args:
+            name: The skill name to look up.
+
+        Returns:
+            The matching skill or None.
+        """
         return self._registry.get(name)
 
     def list_skills(
@@ -39,6 +57,13 @@ class SkillsLibrary(Library[Skill]):
     ) -> List[Skill]:
         """
         Returns skills based on access control lists.
+
+        Args:
+            whitelist: Allowed skill names.
+            blacklist: Forbidden skill names.
+
+        Returns:
+            The filtered list of skills.
         """
         skills = list(self._registry.values())
         return self.apply_access_control(skills, whitelist, blacklist)

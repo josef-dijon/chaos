@@ -39,6 +39,12 @@ class RawMemoryStore:
     """
 
     def __init__(self, db_path: Path) -> None:
+        """
+        Initializes a new raw memory store backed by SQLite.
+
+        Args:
+            db_path: Path to the SQLite database file.
+        """
         self.db_path = db_path
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.connection = sqlite3.connect(self.db_path)
@@ -63,6 +69,11 @@ class RawMemoryStore:
     def __exit__(self, exc_type, exc, traceback) -> None:
         """
         Exits the context manager and closes the connection.
+
+        Args:
+            exc_type: The exception type, if any.
+            exc: The exception instance, if any.
+            traceback: The traceback, if any.
         """
         self.close()
 

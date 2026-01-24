@@ -6,6 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from agent_of_chaos.config import Config
+from agent_of_chaos.config_provider import ConfigProvider
 
 
 def test_config_load_defaults(tmp_path: Path) -> None:
@@ -39,6 +40,26 @@ def test_config_load_from_file(tmp_path: Path) -> None:
     assert config.get_openai_api_key() == "test-key"
     assert config.get_chroma_db_path() == Path(".chaos") / "db" / "chroma"
     assert config.get_raw_db_path() == Path(".chaos") / "db" / "raw.sqlite"
+
+
+def test_config_provider_loads_custom_path(tmp_path: Path) -> None:
+    """Loads configuration via the provider path override."""
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        """
+        {
+          "model_name": "gpt-4o-mini",
+          "openai_api_key": "test-key"
+        }
+        """,
+        encoding="utf-8",
+    )
+
+    provider = ConfigProvider(path=config_path)
+
+    config = provider.load()
+
+    assert config.get_model_name() == "gpt-4o-mini"
 
 
 def test_config_resolves_relative_paths(tmp_path: Path) -> None:
