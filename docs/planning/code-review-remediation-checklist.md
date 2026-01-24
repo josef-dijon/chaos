@@ -18,7 +18,7 @@
 
 ## Phase 2: Agent Pipeline Decomposition
 - [x] Create `PromptBuilder` class with explicit inputs (identity, system prompts, context).
-- [ ] Create `ContextRetriever` class that reads `MemoryView` + `KnowledgeLibrary`.
+- [x] Create `ContextRetriever` class that reads `MemoryView` + `KnowledgeLibrary`.
 - [ ] Create `ToolRunner` class that invokes tools and returns structured results.
 - [ ] Define dataclass for agent step inputs/outputs (e.g., `AgentContext`).
 - [ ] Update `BasicAgent` to orchestrate the components only.
