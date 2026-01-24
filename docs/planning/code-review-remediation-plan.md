@@ -66,6 +66,23 @@ Acceptance Criteria:
 - All filesystem paths are produced by a single helper and consistent with architecture.
 - CLI behavior remains unchanged from user perspective.
 
+## `.chaos` Path Inventory (Phase 0 Output)
+This list will be used to centralize path handling in Phase 1.
+
+Code:
+- `src/agent_of_chaos/config.py` (DEFAULT_CHAOS_DIR, db path defaults, path validation)
+- `src/agent_of_chaos/cli/main.py` (CHAOS_DIR constant and identity path help text)
+
+Tests:
+- `tests/functional/conftest.py` (chroma/raw db paths)
+- `tests/functional/test_cli_workflow.py` (identity path assertion)
+- `tests/functional/test_learning_circuit.py` (identity path read)
+- `tests/test_config.py` (config path assertions)
+
+Docs (reference only):
+- `docs/architecture.md` (path requirements)
+- `docs/planning/*` (plan/checklist references)
+
 ### Phase 2: Agent Pipeline Decomposition
 Objective: Reduce responsibility load and improve testability of the agent execution loop.
 
