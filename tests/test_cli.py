@@ -1,32 +1,47 @@
 from typer.testing import CliRunner
+from pathlib import Path
 from unittest.mock import patch, MagicMock
+
+from agent_of_chaos.config import Config
 from agent_of_chaos.cli.main import app
 
 runner = CliRunner()
 
 
+@patch("agent_of_chaos.cli.main.ConfigProvider")
 @patch("agent_of_chaos.cli.main.Agent")
 @patch("pathlib.Path.exists")
-def test_init_creates_identity(mock_exists, mock_agent):
+def test_init_creates_identity(mock_exists, mock_agent, mock_config_provider):
     mock_exists.return_value = False
+    mock_config_provider.return_value.load.return_value = Config(
+        chaos_dir=Path(".chaos")
+    )
     result = runner.invoke(app, ["init"])
     assert result.exit_code == 0
     assert "Initialized new Chaos Agent" in result.stdout
     mock_agent.assert_called()
 
 
+@patch("agent_of_chaos.cli.main.ConfigProvider")
 @patch("agent_of_chaos.cli.main.Agent")
 @patch("pathlib.Path.exists")
-def test_init_already_exists(mock_exists, mock_agent):
+def test_init_already_exists(mock_exists, mock_agent, mock_config_provider):
     mock_exists.return_value = True
+    mock_config_provider.return_value.load.return_value = Config(
+        chaos_dir=Path(".chaos")
+    )
     result = runner.invoke(app, ["init"])
     assert result.exit_code == 0
     assert "Identity already exists" in result.stdout
     mock_agent.assert_not_called()
 
 
+@patch("agent_of_chaos.cli.main.ConfigProvider")
 @patch("agent_of_chaos.cli.main.Agent")
-def test_do(mock_agent):
+def test_do(mock_agent, mock_config_provider):
+    mock_config_provider.return_value.load.return_value = Config(
+        chaos_dir=Path(".chaos")
+    )
     mock_agent.return_value.do.return_value = "Done"
     result = runner.invoke(app, ["do", "work"])
     assert result.exit_code == 0
@@ -34,8 +49,12 @@ def test_do(mock_agent):
     mock_agent.return_value.do.assert_called_with("work")
 
 
+@patch("agent_of_chaos.cli.main.ConfigProvider")
 @patch("agent_of_chaos.cli.main.Agent")
-def test_learn(mock_agent):
+def test_learn(mock_agent, mock_config_provider):
+    mock_config_provider.return_value.load.return_value = Config(
+        chaos_dir=Path(".chaos")
+    )
     mock_agent.return_value.learn.return_value = "Learned X"
     result = runner.invoke(app, ["learn", "feedback"])
     assert result.exit_code == 0
@@ -43,8 +62,12 @@ def test_learn(mock_agent):
     mock_agent.return_value.learn.assert_called_with("feedback")
 
 
+@patch("agent_of_chaos.cli.main.ConfigProvider")
 @patch("agent_of_chaos.cli.main.Agent")
-def test_dream(mock_agent):
+def test_dream(mock_agent, mock_config_provider):
+    mock_config_provider.return_value.load.return_value = Config(
+        chaos_dir=Path(".chaos")
+    )
     mock_agent.return_value.dream.return_value = "Dreamt"
     result = runner.invoke(app, ["dream"])
     assert result.exit_code == 0

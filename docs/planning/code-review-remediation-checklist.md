@@ -12,7 +12,7 @@
 - [x] Remove `settings = Config.load()` from module import paths.
 - [x] Add centralized helper for identity file path: `.chaos/identities/<agent_id>.identity.json`.
 - [x] Add centralized helper for memory paths (chroma + raw db) using `Config`.
-- [ ] Update `src/agent_of_chaos/cli/main.py` to use centralized helpers.
+- [x] Update `src/agent_of_chaos/cli/main.py` to use centralized helpers.
 - [ ] Update all modules with hardcoded `.chaos` values to use `Config` helpers.
 - [ ] Update `README.md` Python requirement to match `pyproject.toml`.
 

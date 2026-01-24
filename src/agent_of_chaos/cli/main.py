@@ -1,20 +1,18 @@
 import typer
 from rich.console import Console
 from pathlib import Path
+from agent_of_chaos.config import Config
 from agent_of_chaos.config_provider import ConfigProvider
 from agent_of_chaos.core.agent import Agent
 
 app = typer.Typer()
 console = Console()
 
-CHAOS_DIR = Path(".chaos")
-IDENTITIES_DIR = CHAOS_DIR / "identities"
 
-
-def _identity_path(agent_id: str) -> Path:
+def _identity_path(agent_id: str, config: Config) -> Path:
     """Returns the path to an agent identity file."""
 
-    return IDENTITIES_DIR / f"{agent_id}.identity.json"
+    return config.get_identity_path(agent_id)
 
 
 @app.command()
@@ -29,17 +27,17 @@ def init(
     """
     Initialize a new agent Identity in the current directory.
     """
-    IDENTITY_PATH = _identity_path(agent)
+    config = ConfigProvider().load()
+    identity_path = _identity_path(agent, config)
 
-    IDENTITIES_DIR.mkdir(parents=True, exist_ok=True)
+    identity_path.parent.mkdir(parents=True, exist_ok=True)
 
-    if IDENTITY_PATH.exists():
+    if identity_path.exists():
         console.print("[yellow]Identity already exists.[/yellow]")
         return
-    config = ConfigProvider().load()
-    Agent(IDENTITY_PATH, config=config)  # Creates default identity via __init__ logic
+    Agent(identity_path, config=config)  # Creates default identity via __init__ logic
     console.print(
-        f"[green]Initialized new Chaos Agent identity at {IDENTITY_PATH}.[/green]"
+        f"[green]Initialized new Chaos Agent identity at {identity_path}.[/green]"
     )
 
 
@@ -57,8 +55,8 @@ def do(
     Assign a task to the agent's Actor.
     """
     try:
-        identity_path = _identity_path(agent)
         config = ConfigProvider().load()
+        identity_path = _identity_path(agent, config)
         agent_obj = Agent(identity_path, config=config)
         console.print(f"[bold green]Actor:[/bold green] working on '{task}'...")
         response = agent_obj.do(task)
@@ -81,8 +79,8 @@ def learn(
     Trigger the Subconscious to learn from recent logs and feedback.
     """
     try:
-        identity_path = _identity_path(agent)
         config = ConfigProvider().load()
+        identity_path = _identity_path(agent, config)
         agent_obj = Agent(identity_path, config=config)
         console.print(
             f"[bold blue]Subconscious:[/bold blue] reflecting on '{feedback}'..."
@@ -106,8 +104,8 @@ def dream(
     Trigger the dreaming maintenance cycle.
     """
     try:
-        identity_path = _identity_path(agent)
         config = ConfigProvider().load()
+        identity_path = _identity_path(agent, config)
         agent_obj = Agent(identity_path, config=config)
         console.print("[bold blue]Subconscious:[/bold blue] dreaming...")
         result = agent_obj.dream()
