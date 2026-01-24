@@ -28,7 +28,7 @@
 ## Phase 3: Memory Model Fidelity
 - [x] Add memory event types for `tool_call` and `tool_output` in `Agent.do()` flow.
 - [x] Add memory event type for `feedback` and record it during `learn()`.
-- [ ] Update `MemoryContainer` to accept new event types and metadata.
+- [x] Update `MemoryContainer` to accept new event types and metadata.
 - [ ] Add explicit schema or enum for memory event types (avoid ad-hoc strings).
 - [ ] Implement bounded STM strategy (truncate or summarize at max tokens/lines).
 - [ ] Add `RawMemoryStore.close()` and ensure it is called on shutdown.

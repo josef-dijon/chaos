@@ -19,6 +19,13 @@ EVENT_KIND_TOOL_CALL = "tool_call"
 EVENT_KIND_TOOL_OUTPUT = "tool_output"
 EVENT_KIND_FEEDBACK = "feedback"
 VISIBILITY_EXTERNAL = "external"
+EVENT_KINDS = {
+    EVENT_KIND_USER_INPUT,
+    EVENT_KIND_ACTOR_OUTPUT,
+    EVENT_KIND_TOOL_CALL,
+    EVENT_KIND_TOOL_OUTPUT,
+    EVENT_KIND_FEEDBACK,
+}
 
 
 class MemoryContainer:
@@ -82,6 +89,8 @@ class MemoryContainer:
         Returns:
             The LTM entry id, if created.
         """
+        if kind not in EVENT_KINDS:
+            logger.warning(f"Unknown event kind recorded: {kind}")
         try:
             _, ltm_id, ts = self.raw_store.record_event(
                 agent_id=self.agent_id,
