@@ -199,3 +199,6 @@ Acceptance Criteria:
 - CLI commands `init`, `do`, `learn`, and `dream` behave as expected.
 - Tool access respects sandbox boundaries.
 - Memory retrieval returns expected LTM/STM data for both personas.
+
+## Acceptance Criteria Ownership (Phase 0 Decision)
+Acceptance criteria are documented under each phase and will be shared by linking this plan in review/PRs so changes are reviewed against those criteria.

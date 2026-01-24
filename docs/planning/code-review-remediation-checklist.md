@@ -5,7 +5,7 @@
 - [x] Identify every location that constructs `.chaos` paths (CLI, config, tests).
 - [x] Capture a list of memory event types currently used (user_input, actor_output, etc.).
 - [x] Decide whether new memory event types require a schema change and document it.
-- [ ] Define acceptance criteria for each refactor phase and share with stakeholders.
+- [x] Define acceptance criteria for each refactor phase and share with stakeholders.
 
 ## Phase 1: Configuration & Path Centralization
 - [ ] Add a `ConfigProvider` (or factory) to construct `Config` without import-time side effects.
