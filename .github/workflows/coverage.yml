@@ -1,4 +1,4 @@
-name: Tests
+name: Coverage
 
 on:
   push:
@@ -7,9 +7,12 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
-    name: Run Tests
+  coverage:
+    name: Run Coverage
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
 
     steps:
       - name: Checkout code
@@ -26,6 +29,10 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras --dev
 
-      - name: Run tests
-        run: uv run pytest
+      - name: Run tests with coverage
+        run: uv run pytest --cov-report=xml
 
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
