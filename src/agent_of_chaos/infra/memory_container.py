@@ -15,6 +15,7 @@ from agent_of_chaos.infra.raw_memory_store import RawMemoryStore
 from agent_of_chaos.infra.utils import logger
 
 VISIBILITY_EXTERNAL = "external"
+STM_MAX_LINES = 50
 EVENT_KINDS = set(MemoryEventKind)
 
 
@@ -152,6 +153,8 @@ class MemoryContainer:
                 else event.kind
             )
             summary_lines.append(f"{kind_value}: {event.content}")
+        if len(summary_lines) > STM_MAX_LINES:
+            summary_lines = summary_lines[-STM_MAX_LINES:]
         summary = "\n".join(summary_lines)
         ltm_ids = self.raw_store.list_ltm_ids(
             agent_id=self.agent_id, persona=persona, loop_id=loop_id

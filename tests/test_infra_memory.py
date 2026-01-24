@@ -8,6 +8,7 @@ from agent_of_chaos.config import Config
 from agent_of_chaos.domain.memory_event_kind import MemoryEventKind
 from agent_of_chaos.domain.identity import Identity
 from agent_of_chaos.infra.memory import MemoryContainer
+from agent_of_chaos.infra.memory_container import STM_MAX_LINES
 from agent_of_chaos.infra.raw_memory_store import IdeticEvent
 
 
@@ -183,6 +184,41 @@ def test_finalize_loop_creates_summary(memory_deps):
     memory_deps["raw"].return_value.create_stm_entry.assert_called_once()
     args = memory_deps["raw"].return_value.create_stm_entry.call_args.kwargs
     assert args["summary"].startswith("user_input: Hello")
+
+
+def test_finalize_loop_truncates_summary(memory_deps):
+    mem = MemoryContainer(
+        agent_id="agent",
+        identity=memory_deps["identity"],
+        config=memory_deps["config"],
+    )
+    events = []
+    for i in range(STM_MAX_LINES + 5):
+        events.append(
+            IdeticEvent(
+                id=f"event-{i}",
+                ts=f"2024-01-01T00:00:{i:02d}Z",
+                agent_id="agent",
+                persona="actor",
+                loop_id="loop-1",
+                kind=MemoryEventKind.USER_INPUT,
+                visibility="external",
+                content=f"Line {i}",
+                metadata={},
+            )
+        )
+    memory_deps["raw"].return_value.list_idetic_events.return_value = events
+    memory_deps["raw"].return_value.list_ltm_ids.return_value = ["ltm-1"]
+
+    mem.finalize_loop(persona="actor", loop_id="loop-1")
+
+    summary = memory_deps["raw"].return_value.create_stm_entry.call_args.kwargs[
+        "summary"
+    ]
+    summary_lines = summary.splitlines()
+    assert len(summary_lines) == STM_MAX_LINES
+    assert summary_lines[0] == f"user_input: Line {len(events) - STM_MAX_LINES}"
+    assert summary_lines[-1] == f"user_input: Line {len(events) - 1}"
 
 
 def test_finalize_loop_with_no_events(memory_deps):

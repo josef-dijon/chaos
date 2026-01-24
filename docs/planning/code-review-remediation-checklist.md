@@ -30,7 +30,7 @@
 - [x] Add memory event type for `feedback` and record it during `learn()`.
 - [x] Update `MemoryContainer` to accept new event types and metadata.
 - [x] Add explicit schema or enum for memory event types (avoid ad-hoc strings).
-- [ ] Implement bounded STM strategy (truncate or summarize at max tokens/lines).
+- [x] Implement bounded STM strategy (truncate or summarize at max tokens/lines).
 - [ ] Add `RawMemoryStore.close()` and ensure it is called on shutdown.
 - [ ] Wrap STM delete + insert inside an explicit transaction.
 - [ ] Surface vector store upsert failures to callers or mark embed status for retry.
