@@ -155,3 +155,12 @@ class Config(BaseModel):
             The identity file path under the CHAOS identities directory.
         """
         return self.chaos_dir / "identities" / f"{agent_id}.identity.json"
+
+    def get_memory_paths(self) -> tuple[Path, Path]:
+        """
+        Returns the raw and chroma database paths.
+
+        Returns:
+            A tuple containing the raw db path and chroma db path.
+        """
+        return (self.get_raw_db_path(), self.get_chroma_db_path())

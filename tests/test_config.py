@@ -84,3 +84,13 @@ def test_config_identity_path(tmp_path: Path) -> None:
     assert config.get_identity_path("agent") == (
         tmp_path / ".chaos" / "identities" / "agent.identity.json"
     )
+
+
+def test_config_memory_paths(tmp_path: Path) -> None:
+    """Returns raw and chroma database paths."""
+    config = Config(chaos_dir=tmp_path / ".chaos")
+
+    raw_path, chroma_path = config.get_memory_paths()
+
+    assert raw_path == tmp_path / ".chaos" / "db" / "raw.sqlite"
+    assert chroma_path == tmp_path / ".chaos" / "db" / "chroma"
