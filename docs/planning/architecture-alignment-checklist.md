@@ -17,7 +17,7 @@
 - [x] Split tools into one-class-per-file modules
 - [x] Refactor ToolLibrary to expose schemas/types
 - [x] Remove hardcoded tool schemas in BasicAgent
-- [ ] Integrate tool manifest access control in agent/tool selection
+- [x] Integrate tool manifest access control in agent/tool selection
 - [x] Separate knowledge storage path/collections from memory
 - [x] Enforce identity-level access rules for skills/knowledge
 - [ ] Update agent flow to refresh identity per loop definition

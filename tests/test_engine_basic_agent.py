@@ -12,12 +12,14 @@ def mock_deps():
     mock_ident.profile.core_values = ["Accuracy"]
     mock_ident.instructions.system_prompts = ["Be precise"]
     mock_ident.instructions.operational_notes = ["No bugs"]
-    mock_ident.knowledge_whitelist = []
-    mock_ident.knowledge_blacklist = []
-    mock_ident.skills_whitelist = []
-    mock_ident.skills_blacklist = []
-    mock_ident.tool_whitelist = []
-    mock_ident.tool_blacklist = []
+    mock_ident.knowledge_whitelist = None
+    mock_ident.knowledge_blacklist = None
+    mock_ident.skills_whitelist = None
+    mock_ident.skills_blacklist = None
+    mock_ident.tool_manifest = []
+    mock_ident.tool_whitelist = None
+    mock_ident.tool_blacklist = None
+    mock_ident.resolve_tool_whitelist.return_value = None
 
     mock_mem = MagicMock()
     mock_skills = MagicMock()
@@ -112,6 +114,8 @@ def test_recall_subconscious_full_access(mock_graph, mock_llm, mock_deps):
 @patch("agent_of_chaos.engine.basic_agent.StateGraph")
 def test_reason_logic(mock_graph, mock_llm, mock_deps):
     # Setup
+    mock_deps["identity"].tool_manifest = ["test_tool"]
+    mock_deps["identity"].resolve_tool_whitelist.return_value = ["test_tool"]
     mock_deps["skills_lib"].list_skills.return_value = [
         MagicMock(name="S1", content="How to test")
     ]
@@ -145,7 +149,10 @@ def test_reason_logic(mock_graph, mock_llm, mock_deps):
     mock_deps["skills_lib"].list_skills.assert_called()
 
     # Check tool binding
-    mock_deps["tool_lib"].list_tools.assert_called()
+    mock_deps["tool_lib"].list_tools.assert_called_with(
+        whitelist=["test_tool"],
+        blacklist=mock_deps["identity"].tool_blacklist,
+    )
     mock_llm_instance.bind_tools.assert_called_with(
         [mock_tool.as_openai_tool.return_value]
     )

@@ -279,6 +279,19 @@ class Identity(BaseModel):
         """
         self._agent_id = agent_id
 
+    def resolve_tool_whitelist(self) -> Optional[List[str]]:
+        """
+        Resolves the effective tool whitelist for this identity.
+
+        Returns:
+            The effective whitelist to apply, or None to allow all tools.
+        """
+        if self.tool_whitelist is not None:
+            return self.tool_whitelist
+        if self.tool_manifest:
+            return list(self.tool_manifest)
+        return None
+
     @model_validator(mode="after")
     def _validate_schema_version(self) -> "Identity":
         """

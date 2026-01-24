@@ -151,8 +151,9 @@ class BasicAgent:
         """
 
         # Bind Tools
+        tool_whitelist = self.identity.resolve_tool_whitelist()
         available_tools = self.tool_lib.list_tools(
-            whitelist=self.identity.tool_whitelist,
+            whitelist=tool_whitelist,
             blacklist=self.identity.tool_blacklist,
         )
 

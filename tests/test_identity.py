@@ -53,3 +53,27 @@ def test_create_default_identity_sets_agent_id():
 
     assert identity.agent_id == "default"
     assert identity.profile.name == "default"
+
+
+def test_resolve_tool_whitelist_prefers_explicit_whitelist():
+    identity = Identity.create_default("default")
+    identity.tool_manifest = ["tool_a"]
+    identity.tool_whitelist = ["tool_b"]
+
+    assert identity.resolve_tool_whitelist() == ["tool_b"]
+
+
+def test_resolve_tool_whitelist_falls_back_to_manifest():
+    identity = Identity.create_default("default")
+    identity.tool_manifest = ["tool_a"]
+    identity.tool_whitelist = None
+
+    assert identity.resolve_tool_whitelist() == ["tool_a"]
+
+
+def test_resolve_tool_whitelist_allows_all_when_empty():
+    identity = Identity.create_default("default")
+    identity.tool_manifest = []
+    identity.tool_whitelist = None
+
+    assert identity.resolve_tool_whitelist() is None
