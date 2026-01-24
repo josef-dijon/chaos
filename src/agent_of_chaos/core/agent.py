@@ -36,6 +36,7 @@ class Agent:
             skills_lib=self.skills_lib,
             knowledge_lib=self.knowledge_lib,
             tool_lib=self.tool_lib,
+            identity_path=self.identity_path,
             persona="actor",
         )
 
@@ -48,6 +49,7 @@ class Agent:
             skills_lib=self.skills_lib,
             knowledge_lib=self.knowledge_lib,
             tool_lib=self.tool_lib,
+            identity_path=self.identity_path,
             persona="subconscious",
         )
 

@@ -1,4 +1,5 @@
 from langgraph.graph import StateGraph, END
+from pathlib import Path
 from typing import TypedDict, List, Dict, Any, Union, Literal
 from langchain_core.messages import (
     BaseMessage,
@@ -34,6 +35,7 @@ class BasicAgent:
         skills_lib: SkillsLibrary,
         knowledge_lib: KnowledgeLibrary,
         tool_lib: ToolLibrary,
+        identity_path: Path,
         persona: str = "actor",
     ):
         self.identity = identity
@@ -41,7 +43,9 @@ class BasicAgent:
         self.skills_lib = skills_lib
         self.knowledge_lib = knowledge_lib
         self.tool_lib = tool_lib
+        self.identity_path = identity_path
         self.persona = persona
+        self.loop_definition = identity.loop_definition
 
         # Initialize LLM
         self.llm = ChatOpenAI(
@@ -51,6 +55,13 @@ class BasicAgent:
         self.graph = self._build_graph()
 
     def _build_graph(self):
+        if self.identity.loop_definition != "default":
+            raise ValueError(
+                f"Unsupported loop definition: {self.identity.loop_definition}"
+            )
+        return self._build_default_graph()
+
+    def _build_default_graph(self):
         builder = StateGraph(AgentState)
         builder.add_node("recall", self.recall)
         builder.add_node("reason", self.reason)
@@ -67,6 +78,15 @@ class BasicAgent:
         builder.add_edge("act", "reason")
 
         return builder.compile()
+
+    def refresh(self) -> None:
+        """
+        Reloads the identity from disk to pick up patches.
+        """
+        self.identity = Identity.load(self.identity_path)
+        if self.identity.loop_definition != self.loop_definition:
+            self.loop_definition = self.identity.loop_definition
+            self.graph = self._build_graph()
 
     def should_continue(self, state: AgentState) -> Literal["continue", "end"]:
         messages = state["messages"]
@@ -212,6 +232,7 @@ class BasicAgent:
         """
         Executes a task through the agentic loop.
         """
+        self.refresh()
         initial_state: AgentState = {
             "messages": [HumanMessage(content=task)],
             "context": "",

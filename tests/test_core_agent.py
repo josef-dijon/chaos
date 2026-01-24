@@ -44,6 +44,28 @@ def test_agent_init_existing_identity(mock_dependencies):
     assert agent.identity.profile.role == "tester"
     # BasicAgent called twice: actor + subconscious
     assert mocks["basic"].call_count == 2
+    mocks["basic"].assert_has_calls(
+        [
+            call(
+                identity=mocks["ident"].load.return_value,
+                memory=ANY,
+                skills_lib=ANY,
+                knowledge_lib=ANY,
+                tool_lib=ANY,
+                identity_path=Path("dummy_path"),
+                persona="actor",
+            ),
+            call(
+                identity=mocks["ident"].load.return_value,
+                memory=ANY,
+                skills_lib=ANY,
+                knowledge_lib=ANY,
+                tool_lib=ANY,
+                identity_path=Path("dummy_path"),
+                persona="subconscious",
+            ),
+        ]
+    )
 
 
 def test_agent_init_new_identity(mock_dependencies):

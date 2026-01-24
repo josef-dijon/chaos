@@ -1,4 +1,5 @@
 import pytest
+from pathlib import Path
 from unittest.mock import MagicMock, patch, call
 from agent_of_chaos.engine.basic_agent import BasicAgent, AgentState
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage, SystemMessage
@@ -12,6 +13,7 @@ def mock_deps():
     mock_ident.profile.core_values = ["Accuracy"]
     mock_ident.instructions.system_prompts = ["Be precise"]
     mock_ident.instructions.operational_notes = ["No bugs"]
+    mock_ident.loop_definition = "default"
     mock_ident.knowledge_whitelist = None
     mock_ident.knowledge_blacklist = None
     mock_ident.skills_whitelist = None
@@ -32,6 +34,7 @@ def mock_deps():
         "skills_lib": mock_skills,
         "knowledge_lib": mock_know,
         "tool_lib": mock_tools,
+        "identity_path": Path("/tmp/identity.json"),
     }
 
 
@@ -41,6 +44,15 @@ def test_init(mock_graph, mock_llm, mock_deps):
     agent = BasicAgent(**mock_deps)
     mock_llm.assert_called()
     mock_graph.assert_called()
+
+
+@patch("agent_of_chaos.engine.basic_agent.ChatOpenAI")
+@patch("agent_of_chaos.engine.basic_agent.StateGraph")
+def test_init_invalid_loop_definition(mock_graph, mock_llm, mock_deps):
+    mock_deps["identity"].loop_definition = "unsupported"
+
+    with pytest.raises(ValueError, match="Unsupported loop definition"):
+        BasicAgent(**mock_deps)
 
 
 @patch("agent_of_chaos.engine.basic_agent.ChatOpenAI")
@@ -228,7 +240,10 @@ def test_execute(mock_graph, mock_llm, mock_deps):
         "messages": [HumanMessage(content="hi"), AIMessage(content="Final Answer")]
     }
 
+    agent.refresh = MagicMock()
+
     result = agent.execute("hi")
 
     assert result == "Final Answer"
     mock_compiled.invoke.assert_called()
+    agent.refresh.assert_called_once()
