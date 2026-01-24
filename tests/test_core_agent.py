@@ -4,6 +4,7 @@ from pathlib import Path
 from agent_of_chaos.core.agent import Agent
 from agent_of_chaos.infra.memory_container import (
     EVENT_KIND_ACTOR_OUTPUT,
+    EVENT_KIND_FEEDBACK,
     EVENT_KIND_TOOL_CALL,
     EVENT_KIND_TOOL_OUTPUT,
     EVENT_KIND_USER_INPUT,
@@ -195,11 +196,22 @@ def test_agent_learn(mock_dependencies):
     mocks[
         "mem"
     ].return_value.subconscious_view.return_value.get_recent_stm_as_string.return_value = "History"
+    mocks["mem"].return_value.create_loop_id.return_value = "loop-2"
     mock_sub.execute.return_value = "New instructions"
 
     agent.learn("Good job")
 
-    # learn does NOT record feedback to memory in current implementation
+    mocks["mem"].return_value.record_event.assert_any_call(
+        persona="subconscious",
+        loop_id="loop-2",
+        kind=EVENT_KIND_FEEDBACK,
+        visibility=VISIBILITY_EXTERNAL,
+        content="Good job",
+    )
+    mocks["mem"].return_value.finalize_loop.assert_any_call(
+        persona="subconscious",
+        loop_id="loop-2",
+    )
     mock_sub.execute.assert_called()
     mocks["ident"].load.return_value.patch_instructions.assert_called_with(
         "New instructions"

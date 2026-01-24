@@ -8,6 +8,7 @@ from agent_of_chaos.domain.identity import Identity, agent_id_from_path
 from agent_of_chaos.infra.memory import MemoryContainer
 from agent_of_chaos.infra.memory_container import (
     EVENT_KIND_ACTOR_OUTPUT,
+    EVENT_KIND_FEEDBACK,
     EVENT_KIND_TOOL_CALL,
     EVENT_KIND_TOOL_OUTPUT,
     EVENT_KIND_USER_INPUT,
@@ -131,6 +132,14 @@ class Agent:
         """
         Triggers the learning cycle: Subconscious analyzes logs + feedback.
         """
+        loop_id = self.memory.create_loop_id()
+        self.memory.record_event(
+            persona="subconscious",
+            loop_id=loop_id,
+            kind=EVENT_KIND_FEEDBACK,
+            visibility=VISIBILITY_EXTERNAL,
+            content=feedback,
+        )
         recent_logs = self.subconscious_memory.get_recent_stm_as_string(limit=1)
         prompt = f"""
         Analyze the recent interaction logs and the user's feedback: '{feedback}'.
@@ -148,6 +157,7 @@ class Agent:
         if self.identity.tuning_policy.allow_subconscious_identity_updates:
             self.identity.patch_instructions(note)
             self.identity.save(self.identity_path)
+        self.memory.finalize_loop(persona="subconscious", loop_id=loop_id)
         return note
 
     def dream(self) -> str:

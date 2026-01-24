@@ -17,6 +17,7 @@ EVENT_KIND_USER_INPUT = "user_input"
 EVENT_KIND_ACTOR_OUTPUT = "actor_output"
 EVENT_KIND_TOOL_CALL = "tool_call"
 EVENT_KIND_TOOL_OUTPUT = "tool_output"
+EVENT_KIND_FEEDBACK = "feedback"
 VISIBILITY_EXTERNAL = "external"
 
 
