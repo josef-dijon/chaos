@@ -1,12 +1,16 @@
 import typer
 from rich.console import Console
 from pathlib import Path
-from agent_of_chaos.config import Config
+from agent_of_chaos.config import Config, DEFAULT_CHAOS_DIR
 from agent_of_chaos.config_provider import ConfigProvider
 from agent_of_chaos.core.agent import Agent
 
 app = typer.Typer()
 console = Console()
+IDENTITY_PATH_HELP = (
+    "Agent id (stored as "
+    f"{DEFAULT_CHAOS_DIR.as_posix()}/identities/<agent>.identity.json)."
+)
 
 
 def _identity_path(agent_id: str, config: Config) -> Path:
@@ -21,7 +25,7 @@ def init(
         "default",
         "--agent",
         "-a",
-        help="Agent id (stored as .chaos/identities/<agent>.identity.json).",
+        help=IDENTITY_PATH_HELP,
     ),
 ):
     """
@@ -48,7 +52,7 @@ def do(
         "default",
         "--agent",
         "-a",
-        help="Agent id (stored as .chaos/identities/<agent>.identity.json).",
+        help=IDENTITY_PATH_HELP,
     ),
 ):
     """
@@ -72,7 +76,7 @@ def learn(
         "default",
         "--agent",
         "-a",
-        help="Agent id (stored as .chaos/identities/<agent>.identity.json).",
+        help=IDENTITY_PATH_HELP,
     ),
 ):
     """
@@ -97,7 +101,7 @@ def dream(
         "default",
         "--agent",
         "-a",
-        help="Agent id (stored as .chaos/identities/<agent>.identity.json).",
+        help=IDENTITY_PATH_HELP,
     ),
 ):
     """
