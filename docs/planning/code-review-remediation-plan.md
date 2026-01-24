@@ -83,6 +83,19 @@ Docs (reference only):
 - `docs/architecture.md` (path requirements)
 - `docs/planning/*` (plan/checklist references)
 
+## Memory Event Inventory (Phase 0 Output)
+Current event kinds found in code/tests:
+- `user_input` (recorded by `Agent.do()` and tests)
+- `actor_output` (recorded by `Agent.do()` and tests)
+
+Current persistence flow:
+- `MemoryContainer.record_event()` forwards `kind` to `RawMemoryStore.record_event()`.
+- `RawMemoryStore.record_event()` writes idetic and LTM rows with `kind` recorded.
+
+Notes:
+- No `tool_call`, `tool_output`, or `feedback` kinds exist yet.
+- Idetic `visibility` is present in API, but tests only cover `actor` and `subconscious` values.
+
 ### Phase 2: Agent Pipeline Decomposition
 Objective: Reduce responsibility load and improve testability of the agent execution loop.
 

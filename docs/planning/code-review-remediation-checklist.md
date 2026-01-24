@@ -3,7 +3,7 @@
 ## Phase 0: Alignment & Baseline
 - [x] Re-read `docs/architecture.md` and extract explicit path/memory requirements.
 - [x] Identify every location that constructs `.chaos` paths (CLI, config, tests).
-- [ ] Capture a list of memory event types currently used (user_input, actor_output, etc.).
+- [x] Capture a list of memory event types currently used (user_input, actor_output, etc.).
 - [ ] Decide whether new memory event types require a schema change and document it.
 - [ ] Define acceptance criteria for each refactor phase and share with stakeholders.
 
