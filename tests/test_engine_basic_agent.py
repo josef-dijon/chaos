@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch, call
-from agent_of_chaos.engine.basic_agent import BasicAgent
+from agent_of_chaos.engine.basic_agent import BasicAgent, AgentState
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage, SystemMessage
 
 
@@ -49,10 +49,12 @@ def test_should_continue(mock_graph, mock_llm, mock_deps):
     msg_with_tool = AIMessage(
         content="use tool", tool_calls=[{"name": "t1", "args": {}, "id": "1"}]
     )
-    assert agent.should_continue({"messages": [msg_with_tool]}) == "continue"
+    state_with_tool: AgentState = {"messages": [msg_with_tool], "context": ""}
+    assert agent.should_continue(state_with_tool) == "continue"
 
     msg_no_tool = AIMessage(content="done")
-    assert agent.should_continue({"messages": [msg_no_tool]}) == "end"
+    state_no_tool: AgentState = {"messages": [msg_no_tool], "context": ""}
+    assert agent.should_continue(state_no_tool) == "end"
 
 
 @patch("agent_of_chaos.engine.basic_agent.ChatOpenAI")
@@ -63,9 +65,13 @@ def test_recall(mock_graph, mock_llm, mock_deps):
 
     agent = BasicAgent(**mock_deps)
 
-    assert agent.recall({"messages": []}) == {"context": ""}
+    empty_state: AgentState = {"messages": [], "context": ""}
+    assert agent.recall(empty_state) == {"context": ""}
 
-    state = {"messages": [HumanMessage(content="Help me")]}
+    state: AgentState = {
+        "messages": [HumanMessage(content="Help me")],
+        "context": "",
+    }
     result = agent.recall(state)
 
     assert "LTM: Memory 1" in result["context"]
@@ -82,9 +88,11 @@ def test_reason_logic(mock_graph, mock_llm, mock_deps):
     ]
 
     mock_tool = MagicMock()
-    mock_tool.name = "test_tool"
-    mock_tool.description = "Tests things"
-    mock_deps["tool_lib"].filter_tools.return_value = [mock_tool]
+    mock_tool.as_openai_tool.return_value = {
+        "type": "function",
+        "function": {"name": "test_tool", "description": "Tests things"},
+    }
+    mock_deps["tool_lib"].list_tools.return_value = [mock_tool]
 
     # Mock LLM behavior
     mock_llm_instance = mock_llm.return_value
@@ -95,7 +103,10 @@ def test_reason_logic(mock_graph, mock_llm, mock_deps):
     agent = BasicAgent(**mock_deps)
 
     # Run
-    state = {"messages": [HumanMessage(content="Hi")], "context": "Previous info"}
+    state: AgentState = {
+        "messages": [HumanMessage(content="Hi")],
+        "context": "Previous info",
+    }
     result = agent.reason(state)
 
     # Assertions
@@ -105,8 +116,10 @@ def test_reason_logic(mock_graph, mock_llm, mock_deps):
     mock_deps["skills_lib"].filter_skills.assert_called()
 
     # Check tool binding
-    mock_deps["tool_lib"].filter_tools.assert_called()
-    mock_llm_instance.bind_tools.assert_called()
+    mock_deps["tool_lib"].list_tools.assert_called()
+    mock_llm_instance.bind_tools.assert_called_with(
+        [mock_tool.as_openai_tool.return_value]
+    )
 
     # Check invoke call structure
     call_args = mock_bound_llm.invoke.call_args[0][0]  # List of messages
@@ -131,12 +144,12 @@ def test_act(mock_graph, mock_llm, mock_deps):
     agent = BasicAgent(**mock_deps)
 
     mock_tool = MagicMock()
-    mock_tool.run.return_value = "Tool Output"
+    mock_tool.call.return_value = "Tool Output"
     mock_deps["tool_lib"].get_tool.return_value = mock_tool
 
     tool_call = {"name": "test_tool", "args": {"arg": 1}, "id": "call_1"}
     message = AIMessage(content="calling", tool_calls=[tool_call])
-    state = {"messages": [message]}
+    state: AgentState = {"messages": [message], "context": ""}
 
     result = agent.act(state)
 
@@ -145,7 +158,7 @@ def test_act(mock_graph, mock_llm, mock_deps):
     assert isinstance(tool_msg, ToolMessage)
     assert tool_msg.content == "Tool Output"
     assert tool_msg.tool_call_id == "call_1"
-    mock_tool.run.assert_called_with(arg=1)
+    mock_tool.call.assert_called_with({"arg": 1})
 
 
 @patch("agent_of_chaos.engine.basic_agent.ChatOpenAI")
@@ -154,11 +167,14 @@ def test_act_tool_error(mock_graph, mock_llm, mock_deps):
     agent = BasicAgent(**mock_deps)
 
     mock_tool = MagicMock()
-    mock_tool.run.side_effect = Exception("Boom")
+    mock_tool.call.side_effect = Exception("Boom")
     mock_deps["tool_lib"].get_tool.return_value = mock_tool
 
     tool_call = {"name": "test_tool", "args": {}, "id": "call_1"}
-    state = {"messages": [AIMessage(content="calling", tool_calls=[tool_call])]}
+    state: AgentState = {
+        "messages": [AIMessage(content="calling", tool_calls=[tool_call])],
+        "context": "",
+    }
 
     result = agent.act(state)
     assert "Error executing test_tool: Boom" in result["messages"][0].content

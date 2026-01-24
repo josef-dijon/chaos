@@ -143,41 +143,12 @@ class BasicAgent:
         """
 
         # Bind Tools
-        available_tools = self.tool_lib.filter_tools(
+        available_tools = self.tool_lib.list_tools(
             whitelist=self.identity.tool_whitelist,
             blacklist=self.identity.tool_blacklist,
         )
 
-        # Convert our custom BaseTool instances to OpenAI function schemas
-        formatted_tools = []
-        for tool in available_tools:
-            # We assume a standard schema for now since we don't have full introspection implemented
-            # In a real implementation, we would inspect the `run` method signature
-            parameters = {
-                "type": "object",
-                "properties": {
-                    "file_path": {
-                        "type": "string",
-                        "description": "The absolute path to the file",
-                    },
-                    "content": {
-                        "type": "string",
-                        "description": "Content to write (for write_file only)",
-                    },
-                },
-                "required": ["file_path"],
-            }
-
-            formatted_tools.append(
-                {
-                    "type": "function",
-                    "function": {
-                        "name": tool.name,
-                        "description": tool.description,
-                        "parameters": parameters,
-                    },
-                }
-            )
+        formatted_tools = [tool.as_openai_tool() for tool in available_tools]
 
         llm_with_tools = self.llm
         if formatted_tools:
@@ -216,9 +187,9 @@ class BasicAgent:
             if tool:
                 # Execute
                 try:
-                    output = tool.run(**tool_args)
-                except Exception as e:
-                    output = f"Error executing {tool_name}: {e}"
+                    output = tool.call(tool_args)
+                except Exception as exc:
+                    output = f"Error executing {tool_name}: {exc}"
             else:
                 output = f"Error: Tool {tool_name} not found or access denied."
 

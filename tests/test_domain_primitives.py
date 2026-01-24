@@ -1,7 +1,8 @@
+from dataclasses import dataclass, field
 import pytest
 from pydantic import ValidationError
 from agent_of_chaos.domain.knowledge import KnowledgeItem
-from agent_of_chaos.domain.tool import BaseTool
+from agent_of_chaos.domain.tool import BaseTool, ToolType
 
 
 def test_knowledge_item_creation():
@@ -27,18 +28,29 @@ def test_knowledge_item_full_creation():
 
 def test_base_tool_instantiation():
     # BaseTool is abstract, so we must implement it to test it
+    @dataclass
     class ConcreteTool(BaseTool):
-        def run(self, **kwargs) -> str:
+        name: str = "test_tool"
+        description: str = "A test tool"
+        type: ToolType = ToolType.CLI
+        schema: dict = field(
+            default_factory=lambda: {"type": "object", "properties": {}}
+        )
+
+        def call(self, args: dict) -> str:
             return "ran"
 
-    tool = ConcreteTool(name="test_tool", description="A test tool")
+    tool = ConcreteTool()
     assert tool.name == "test_tool"
     assert tool.description == "A test tool"
-    assert tool.run() == "ran"
+    assert tool.call({}) == "ran"
+    assert tool.as_openai_tool()["function"]["name"] == "test_tool"
 
 
 def test_base_tool_cannot_instantiate_abstract():
     # Attempting to instantiate BaseTool directly should fail or be impossible
     # Python's ABCMeta prevents instantiation of classes with abstract methods
     with pytest.raises(TypeError):
-        BaseTool(name="bad", description="bad")
+        BaseTool(  # type: ignore[abstract]
+            name="bad", description="bad", type=ToolType.CLI, schema={}
+        )

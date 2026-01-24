@@ -13,10 +13,10 @@
 - [ ] Implement STM per loop with loop_id tracking
 - [ ] Add persona-specific memory access controls
 - [ ] Update agent flows to emit idetic events + loop_id
-- [ ] Add BaseTool type/schema/call contract
-- [ ] Split tools into one-class-per-file modules
-- [ ] Refactor ToolLibrary to expose schemas/types
-- [ ] Remove hardcoded tool schemas in BasicAgent
+- [x] Add BaseTool type/schema/call contract
+- [x] Split tools into one-class-per-file modules
+- [x] Refactor ToolLibrary to expose schemas/types
+- [x] Remove hardcoded tool schemas in BasicAgent
 - [ ] Integrate tool manifest access control in agent/tool selection
 - [ ] Separate knowledge storage path/collections from memory
 - [ ] Enforce identity-level access rules for skills/knowledge

@@ -2,7 +2,6 @@ import pytest
 from unittest.mock import MagicMock, patch
 from agent_of_chaos.infra.knowledge import KnowledgeLibrary
 from agent_of_chaos.infra.tools import ToolLibrary, FileReadTool, FileWriteTool
-from agent_of_chaos.domain.tool import BaseTool
 
 # --- KnowledgeLibrary Tests ---
 
@@ -81,12 +80,12 @@ def test_tool_library_filter():
     lib.register(t2)
 
     # Whitelist
-    filtered = lib.filter_tools(whitelist=["read_file"])
+    filtered = lib.list_tools(whitelist=["read_file"])
     assert len(filtered) == 1
     assert filtered[0].name == "read_file"
 
     # Blacklist
-    filtered = lib.filter_tools(blacklist=["read_file"])
+    filtered = lib.list_tools(blacklist=["read_file"])
     assert len(filtered) == 1
     assert filtered[0].name == "write_file"
 
@@ -97,15 +96,15 @@ def test_file_read_tool(mock_read):
     mock_read.return_value = "content"
 
     # Success
-    assert tool.run(file_path="foo.txt") == "content"
+    assert tool.call({"file_path": "foo.txt"}) == "content"
     mock_read.assert_called_with()
 
     # Missing arg
-    assert "required" in tool.run()
+    assert "required" in tool.call({})
 
     # Exception
     mock_read.side_effect = Exception("Error")
-    assert "Error" in tool.run(file_path="foo.txt")
+    assert "Error" in tool.call({"file_path": "foo.txt"})
 
 
 @patch("pathlib.Path.write_text")
@@ -113,12 +112,12 @@ def test_file_write_tool(mock_write):
     tool = FileWriteTool()
 
     # Success
-    assert "successfully" in tool.run(file_path="foo.txt", content="bar")
+    assert "successfully" in tool.call({"file_path": "foo.txt", "content": "bar"})
     mock_write.assert_called_with("bar")
 
     # Missing args
-    assert "required" in tool.run(file_path="foo.txt")
+    assert "required" in tool.call({"file_path": "foo.txt"})
 
     # Exception
     mock_write.side_effect = Exception("Error")
-    assert "Error" in tool.run(file_path="foo.txt", content="bar")
+    assert "Error" in tool.call({"file_path": "foo.txt", "content": "bar"})
