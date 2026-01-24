@@ -224,6 +224,18 @@ class MemoryContainer:
         ]
         return "\n".join(lines)
 
+    def close(self) -> None:
+        """
+        Closes any underlying storage connections.
+
+        This currently closes the raw SQLite connection and any optional
+        Chroma client close hook if available.
+        """
+        self.raw_store.close()
+        close_method = getattr(self.chroma_client, "close", None)
+        if callable(close_method):
+            close_method()
+
     def actor_view(self) -> "ActorMemoryView":
         """
         Returns a persona-scoped actor memory view.

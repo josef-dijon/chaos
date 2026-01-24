@@ -39,10 +39,13 @@ def init(
     if identity_path.exists():
         console.print("[yellow]Identity already exists.[/yellow]")
         return
-    Agent(identity_path, config=config)  # Creates default identity via __init__ logic
-    console.print(
-        f"[green]Initialized new Chaos Agent identity at {identity_path}.[/green]"
-    )
+    agent_obj = Agent(identity_path, config=config)  # Creates default identity
+    try:
+        console.print(
+            f"[green]Initialized new Chaos Agent identity at {identity_path}.[/green]"
+        )
+    finally:
+        agent_obj.close()
 
 
 @app.command()
@@ -58,6 +61,7 @@ def do(
     """
     Assign a task to the agent's Actor.
     """
+    agent_obj = None
     try:
         config = ConfigProvider().load()
         identity_path = _identity_path(agent, config)
@@ -67,6 +71,9 @@ def do(
         console.print(f"[green]{response}[/green]")
     except Exception as e:
         console.print(f"[red]Error:[/red] {e}")
+    finally:
+        if agent_obj:
+            agent_obj.close()
 
 
 @app.command()
@@ -82,6 +89,7 @@ def learn(
     """
     Trigger the Subconscious to learn from recent logs and feedback.
     """
+    agent_obj = None
     try:
         config = ConfigProvider().load()
         identity_path = _identity_path(agent, config)
@@ -93,6 +101,9 @@ def learn(
         console.print(f"[blue]Learned:[/blue] {note}")
     except Exception as e:
         console.print(f"[red]Error:[/red] {e}")
+    finally:
+        if agent_obj:
+            agent_obj.close()
 
 
 @app.command()
@@ -107,6 +118,7 @@ def dream(
     """
     Trigger the dreaming maintenance cycle.
     """
+    agent_obj = None
     try:
         config = ConfigProvider().load()
         identity_path = _identity_path(agent, config)
@@ -116,6 +128,9 @@ def dream(
         console.print(f"[blue]{result}[/blue]")
     except Exception as e:
         console.print(f"[red]Error:[/red] {e}")
+    finally:
+        if agent_obj:
+            agent_obj.close()
 
 
 if __name__ == "__main__":

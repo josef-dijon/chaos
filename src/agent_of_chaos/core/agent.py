@@ -160,3 +160,9 @@ class Agent:
         """
         # MVP Stub
         return "Dream cycle complete (Stub)."
+
+    def close(self) -> None:
+        """
+        Closes underlying resources for this agent.
+        """
+        self.memory.close()

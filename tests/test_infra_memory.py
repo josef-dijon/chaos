@@ -221,6 +221,20 @@ def test_finalize_loop_truncates_summary(memory_deps):
     assert summary_lines[-1] == f"user_input: Line {len(events) - 1}"
 
 
+def test_memory_container_close_calls_raw_store(memory_deps):
+    mem = MemoryContainer(
+        agent_id="agent",
+        identity=memory_deps["identity"],
+        config=memory_deps["config"],
+    )
+    memory_deps["chroma"].return_value.close = MagicMock()
+
+    mem.close()
+
+    memory_deps["raw"].return_value.close.assert_called_once()
+    memory_deps["chroma"].return_value.close.assert_called_once()
+
+
 def test_finalize_loop_with_no_events(memory_deps):
     mem = MemoryContainer(
         agent_id="agent",

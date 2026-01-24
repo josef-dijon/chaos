@@ -1,6 +1,7 @@
 """Tests for the raw memory SQLite store."""
 
 from pathlib import Path
+from unittest.mock import MagicMock
 
 from agent_of_chaos.domain.memory_event_kind import MemoryEventKind
 from agent_of_chaos.infra.raw_memory_store import RawMemoryStore
@@ -80,6 +81,17 @@ def test_raw_memory_store_stm_entries(tmp_path: Path) -> None:
 
         entries = store.list_stm_entries(agent_id="agent", personas=["actor"], limit=1)
         assert entries[0]["summary"].startswith("user_input: Hello")
+
+
+def test_raw_memory_store_close(tmp_path: Path) -> None:
+    db_path = tmp_path / "raw.sqlite"
+    store = RawMemoryStore(db_path)
+    store.connection.close()
+    store.connection = MagicMock()
+
+    store.close()
+
+    store.connection.close.assert_called_once()
 
 
 def test_raw_memory_store_empty_queries(tmp_path: Path) -> None:

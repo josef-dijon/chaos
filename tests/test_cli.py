@@ -20,6 +20,7 @@ def test_init_creates_identity(mock_exists, mock_agent, mock_config_provider):
     assert result.exit_code == 0
     assert "Initialized new Chaos Agent" in result.stdout
     mock_agent.assert_called()
+    mock_agent.return_value.close.assert_called_once()
 
 
 @patch("agent_of_chaos.cli.main.ConfigProvider")
@@ -34,6 +35,7 @@ def test_init_already_exists(mock_exists, mock_agent, mock_config_provider):
     assert result.exit_code == 0
     assert "Identity already exists" in result.stdout
     mock_agent.assert_not_called()
+    mock_config_provider.return_value.load.assert_called()
 
 
 @patch("agent_of_chaos.cli.main.ConfigProvider")
@@ -47,6 +49,7 @@ def test_do(mock_agent, mock_config_provider):
     assert result.exit_code == 0
     assert "Done" in result.stdout
     mock_agent.return_value.do.assert_called_with("work")
+    mock_agent.return_value.close.assert_called_once()
 
 
 @patch("agent_of_chaos.cli.main.ConfigProvider")
@@ -60,6 +63,7 @@ def test_learn(mock_agent, mock_config_provider):
     assert result.exit_code == 0
     assert "Learned X" in result.stdout
     mock_agent.return_value.learn.assert_called_with("feedback")
+    mock_agent.return_value.close.assert_called_once()
 
 
 @patch("agent_of_chaos.cli.main.ConfigProvider")
@@ -73,3 +77,4 @@ def test_dream(mock_agent, mock_config_provider):
     assert result.exit_code == 0
     assert "Dreamt" in result.stdout
     mock_agent.return_value.dream.assert_called()
+    mock_agent.return_value.close.assert_called_once()
