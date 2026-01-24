@@ -1,7 +1,7 @@
 # CHAOS: Cognitive Hierarchical Adaptive OS
 
 [![Tests](https://github.com/josef-dijon/chaos/actions/workflows/test.yml/badge.svg)](https://github.com/josef-dijon/chaos/actions/workflows/test.yml)
-[![Coverage](https://codecov.io/gh/josef-dijon/chaos/graph/badge.svg?token=placeholder)](https://codecov.io/gh/josef-dijon/chaos)
+[![Coverage](https://github.com/josef-dijon/chaos/actions/workflows/coverage.yml/badge.svg)](https://github.com/josef-dijon/chaos/actions/workflows/coverage.yml)
 
 CHAOS is a framework for building persistent, self-correcting AI agents. It implements a **Dual-Process Architecture** that separates active task execution from background reflection.
 
