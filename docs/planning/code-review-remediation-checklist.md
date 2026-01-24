@@ -20,7 +20,7 @@
 - [x] Create `PromptBuilder` class with explicit inputs (identity, system prompts, context).
 - [x] Create `ContextRetriever` class that reads `MemoryView` + `KnowledgeLibrary`.
 - [x] Create `ToolRunner` class that invokes tools and returns structured results.
-- [ ] Define dataclass for agent step inputs/outputs (e.g., `AgentContext`).
+- [x] Define dataclass for agent step inputs/outputs (e.g., `AgentContext`).
 - [ ] Update `BasicAgent` to orchestrate the components only.
 - [ ] Add unit tests for each component (prompt ordering, context composition, tool run errors).
 - [ ] Add docstrings for each new class and method.
