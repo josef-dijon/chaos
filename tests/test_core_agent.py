@@ -17,8 +17,10 @@ def mock_dependencies():
         # Setup common returns
         mock_ident_instance = MagicMock()
         mock_ident.load.return_value = mock_ident_instance
+        mock_ident.create_default.return_value = mock_ident_instance
         mock_ident.return_value = mock_ident_instance
-        mock_ident_instance.role = "tester"
+        mock_ident_instance.profile.role = "tester"
+        mock_ident_instance.tuning_policy.allow_subconscious_identity_updates = True
 
         yield {
             "ident": mock_ident,
@@ -35,11 +37,11 @@ def test_agent_init_existing_identity(mock_dependencies):
     with patch("pathlib.Path.exists", return_value=True):
         agent = Agent(identity_path=Path("dummy_path"))
 
-    # It loads the main identity AND the subconscious identity
-    assert mocks["ident"].load.call_count == 2
+    # It loads the main identity once and reuses it for the subconscious
+    assert mocks["ident"].load.call_count == 1
     mocks["ident"].load.assert_any_call(Path("dummy_path"))
 
-    assert agent.identity.role == "tester"
+    assert agent.identity.profile.role == "tester"
     # BasicAgent called twice: actor + subconscious
     assert mocks["basic"].call_count == 2
 
@@ -51,8 +53,10 @@ def test_agent_init_new_identity(mock_dependencies):
     with patch("pathlib.Path.exists", return_value=False):
         agent = Agent(identity_path=Path("new_path"))
 
-    mocks["ident"].assert_called()  # Created new
-    mocks["ident"].return_value.save.assert_called_once_with(Path("new_path"))
+    mocks["ident"].create_default.assert_called_once_with("new_path")
+    mocks["ident"].create_default.return_value.save.assert_called_once_with(
+        Path("new_path")
+    )
 
 
 def test_agent_do(mock_dependencies):

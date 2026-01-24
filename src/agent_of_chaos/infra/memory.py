@@ -14,7 +14,7 @@ class MemoryContainer:
 
     def __init__(self, collection_name: str = "agent_memories"):
         self.chroma_client = chromadb.PersistentClient(
-            path=str(settings.chroma_db_path)
+            path=str(settings.get_chroma_db_path())
         )
         self.collection = self.chroma_client.get_or_create_collection(
             name=collection_name

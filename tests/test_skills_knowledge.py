@@ -30,6 +30,6 @@ def test_skills_filtering():
 
 def test_knowledge_library_search(tmp_path):
     # Mock settings path?
-    # KnowledgeLibrary uses settings.chroma_db_path.
+    # KnowledgeLibrary uses settings.get_chroma_db_path().
     # We should probably mock settings or use a separate test db.
     pass

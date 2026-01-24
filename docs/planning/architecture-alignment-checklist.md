@@ -1,0 +1,26 @@
+# Architecture Alignment Checklist
+
+- [x] Define JSON-backed Config schema and validation
+- [x] Replace BaseSettings usage with Config accessors
+- [x] Update default storage paths (`.chaos/db/chroma`, `.chaos/db/raw.sqlite`)
+- [x] Adjust CLI/test fixtures to new config paths
+- [x] Extend Identity schema with required fields (schema_version, loop_definition, memory config, tuning policy)
+- [x] Implement agent_id derivation from identity file name
+- [x] Enforce identity version compatibility on load
+- [x] Update subconscious identity loading to standard path
+- [ ] Implement idetic event schema and raw event store (SQLite)
+- [ ] Build LTM vector store wired 1:1 to idetic events
+- [ ] Implement STM per loop with loop_id tracking
+- [ ] Add persona-specific memory access controls
+- [ ] Update agent flows to emit idetic events + loop_id
+- [ ] Add BaseTool type/schema/call contract
+- [ ] Split tools into one-class-per-file modules
+- [ ] Refactor ToolLibrary to expose schemas/types
+- [ ] Remove hardcoded tool schemas in BasicAgent
+- [ ] Integrate tool manifest access control in agent/tool selection
+- [ ] Separate knowledge storage path/collections from memory
+- [ ] Enforce identity-level access rules for skills/knowledge
+- [ ] Update agent flow to refresh identity per loop definition
+- [x] Update unit tests for new config/identity/memory behavior
+- [x] Update functional tests for new storage paths and memory behavior
+- [ ] Fill knowledge/skills coverage gaps

@@ -1,0 +1,77 @@
+"""Tests for configuration loading and validation."""
+
+from pathlib import Path
+
+import pytest
+from pydantic import ValidationError
+
+from agent_of_chaos.config import Config
+
+
+def test_config_load_defaults(tmp_path: Path) -> None:
+    """Uses default values when the config file is missing."""
+    config = Config.load(path=tmp_path / "missing.json")
+
+    assert config.get_chaos_dir() == Path(".chaos")
+    assert config.get_chroma_db_path() == Path(".chaos") / "db" / "chroma"
+    assert config.get_raw_db_path() == Path(".chaos") / "db" / "raw.sqlite"
+
+
+def test_config_load_from_file(tmp_path: Path) -> None:
+    """Loads configuration values from JSON when present."""
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        """
+        {
+          "env": "test",
+          "model_name": "gpt-4o-mini",
+          "openai_api_key": "test-key",
+          "chroma_db_path": ".chaos/db/chroma",
+          "raw_db_path": ".chaos/db/raw.sqlite"
+        }
+        """,
+        encoding="utf-8",
+    )
+
+    config = Config.load(path=config_path)
+
+    assert config.get_model_name() == "gpt-4o-mini"
+    assert config.get_openai_api_key() == "test-key"
+    assert config.get_chroma_db_path() == Path(".chaos") / "db" / "chroma"
+    assert config.get_raw_db_path() == Path(".chaos") / "db" / "raw.sqlite"
+
+
+def test_config_resolves_relative_paths(tmp_path: Path) -> None:
+    """Anchors relative storage paths under the CHAOS directory."""
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        """
+        {
+          "chroma_db_path": "db/custom",
+          "raw_db_path": "db/raw.sqlite"
+        }
+        """,
+        encoding="utf-8",
+    )
+
+    config = Config.load(path=config_path)
+
+    assert config.get_chroma_db_path() == Path(".chaos") / "db" / "custom"
+    assert config.get_raw_db_path() == Path(".chaos") / "db" / "raw.sqlite"
+
+
+def test_config_rejects_unknown_fields(tmp_path: Path) -> None:
+    """Rejects unexpected keys to enforce schema validation."""
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        """
+        {
+          "env": "test",
+          "unknown": "value"
+        }
+        """,
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValidationError):
+        Config.load(path=config_path)

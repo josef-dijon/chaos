@@ -1,27 +1,10 @@
 from pathlib import Path
-from agent_of_chaos.domain.identity import Identity, Profile, Instructions
+from agent_of_chaos.domain.identity import Identity, agent_id_from_path
 from agent_of_chaos.infra.memory import MemoryContainer
 from agent_of_chaos.infra.skills import SkillsLibrary
 from agent_of_chaos.infra.knowledge import KnowledgeLibrary
 from agent_of_chaos.infra.tools import ToolLibrary, FileReadTool, FileWriteTool
 from agent_of_chaos.engine.basic_agent import BasicAgent
-
-DEFAULT_SUB_PATH = Path("src/agent_of_chaos/default_subconscious.json")
-
-
-def _agent_id_from_identity_path(identity_path: Path) -> str:
-    """Derives an agent id from an identity filename.
-
-    Expected format: `<agent_id>.identity.json`.
-    """
-
-    filename = identity_path.name
-    suffix = ".identity.json"
-    if filename.endswith(suffix):
-        return filename[: -len(suffix)]
-    if filename.endswith(".json"):
-        return filename[: -len(".json")]
-    return identity_path.stem
 
 
 class Agent:
@@ -34,19 +17,8 @@ class Agent:
         if identity_path.exists():
             self.identity = Identity.load(identity_path)
         else:
-            agent_id = _agent_id_from_identity_path(identity_path)
-            # Default template
-            self.identity = Identity(
-                profile=Profile(
-                    name=agent_id or "Chaos",
-                    role="Assistant",
-                    core_values=["Helpful", "Harmless", "Honest"],
-                ),
-                instructions=Instructions(
-                    system_prompts=["You are a helpful assistant."]
-                ),
-                tool_manifest=[],
-            )
+            agent_id = agent_id_from_path(identity_path)
+            self.identity = Identity.create_default(agent_id)
             self.identity.save(identity_path)
 
         self.memory = MemoryContainer()
@@ -66,18 +38,8 @@ class Agent:
             tool_lib=self.tool_lib,
         )
 
-        # Subconscious setup
-        # For MVP, we load from the default json relative to the package
-        sub_path = Path(__file__).parent.parent / "default_subconscious.json"
-        if sub_path.exists():
-            self.sub_identity = Identity.load(sub_path)
-        else:
-            # Fallback if file missing
-            self.sub_identity = Identity(
-                profile=Profile(name="Subconscious", role="Analyst", core_values=[]),
-                instructions=Instructions(),
-                tool_manifest=[],
-            )
+        # Subconscious setup uses the same identity source of truth.
+        self.sub_identity = self.identity
 
         self.subconscious = BasicAgent(
             identity=self.sub_identity,
@@ -114,8 +76,9 @@ class Agent:
         note = self.subconscious.execute(prompt)
 
         # Patch and Save
-        self.identity.patch_instructions(note)
-        self.identity.save(self.identity_path)
+        if self.identity.tuning_policy.allow_subconscious_identity_updates:
+            self.identity.patch_instructions(note)
+            self.identity.save(self.identity_path)
         return note
 
     def dream(self) -> str:

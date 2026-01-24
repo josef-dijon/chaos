@@ -43,8 +43,8 @@ class BasicAgent:
 
         # Initialize LLM
         self.llm = ChatOpenAI(
-            model=settings.model_name,
-            api_key=settings.openai_api_key,  # type: ignore
+            model=settings.get_model_name(),
+            api_key=settings.get_openai_api_key(),  # type: ignore
         )
         self.graph = self._build_graph()
 

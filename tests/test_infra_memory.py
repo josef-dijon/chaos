@@ -9,7 +9,7 @@ def mock_deps():
         patch("agent_of_chaos.infra.memory.chromadb.PersistentClient") as mock_chroma,
         patch("agent_of_chaos.infra.memory.settings") as mock_settings,
     ):
-        mock_settings.chroma_db_path = "/tmp/db"
+        mock_settings.get_chroma_db_path.return_value = "/tmp/db"
         mock_collection = MagicMock()
         mock_chroma.return_value.get_or_create_collection.return_value = mock_collection
 
