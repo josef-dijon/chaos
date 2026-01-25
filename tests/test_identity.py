@@ -9,6 +9,7 @@ from pathlib import Path
 
 
 def test_identity_serialization(tmp_path: Path):
+    """Serializes and loads an identity without losing data."""
     profile = Profile(name="Test", role="Tester", core_values=["Test"])
     instructions = Instructions(operational_notes=["Note 1"])
     identity = Identity(profile=profile, instructions=instructions, tool_manifest=[])
@@ -26,15 +27,31 @@ def test_identity_serialization(tmp_path: Path):
 
 
 def test_patch_instructions():
+    """Appends operational notes when policy allows updates."""
     profile = Profile(name="Test", role="Tester", core_values=["Test"])
     instructions = Instructions(operational_notes=["Note 1"])
     identity = Identity(profile=profile, instructions=instructions, tool_manifest=[])
 
-    identity.patch_instructions("Note 2")
+    updated = identity.patch_instructions("Note 2")
+    assert updated is True
     assert "Note 2" in identity.instructions.operational_notes
 
 
+def test_patch_instructions_blocked_by_policy():
+    """Blocks operational notes updates when policy forbids them."""
+    profile = Profile(name="Test", role="Tester", core_values=["Test"])
+    instructions = Instructions(operational_notes=["Note 1"])
+    identity = Identity(profile=profile, instructions=instructions, tool_manifest=[])
+
+    identity.tuning_policy.whitelist = []
+    updated = identity.patch_instructions("Note 2")
+
+    assert updated is False
+    assert identity.instructions.operational_notes == ["Note 1"]
+
+
 def test_identity_defaults_include_memory_config():
+    """Ensures memory defaults are set on new identities."""
     profile = Profile(name="Test", role="Tester", core_values=["Test"])
     instructions = Instructions()
     identity = Identity(profile=profile, instructions=instructions, tool_manifest=[])
@@ -44,11 +61,13 @@ def test_identity_defaults_include_memory_config():
 
 
 def test_agent_id_from_path():
+    """Derives agent ids from identity file names."""
     assert agent_id_from_path(Path("alpha.identity.json")) == "alpha"
     assert agent_id_from_path(Path("beta.json")) == "beta"
 
 
 def test_create_default_identity_sets_agent_id():
+    """Uses the agent id in default identity creation."""
     identity = Identity.create_default("default")
 
     assert identity.agent_id == "default"
@@ -57,6 +76,7 @@ def test_create_default_identity_sets_agent_id():
 
 
 def test_create_default_identity_uses_agent_prefix():
+    """Prefixes memory collection names with the agent id."""
     identity = Identity.create_default("alpha")
 
     assert identity.memory.actor.ltm_collection == "alpha__actor__ltm"
@@ -64,6 +84,7 @@ def test_create_default_identity_uses_agent_prefix():
 
 
 def test_resolve_tool_whitelist_prefers_explicit_whitelist():
+    """Prefers an explicit whitelist over tool manifest."""
     identity = Identity.create_default("default")
     identity.tool_manifest = ["tool_a"]
     identity.tool_whitelist = ["tool_b"]
@@ -72,6 +93,7 @@ def test_resolve_tool_whitelist_prefers_explicit_whitelist():
 
 
 def test_resolve_tool_whitelist_falls_back_to_manifest():
+    """Falls back to tool manifest when no whitelist is set."""
     identity = Identity.create_default("default")
     identity.tool_manifest = ["tool_a"]
     identity.tool_whitelist = None
@@ -80,6 +102,7 @@ def test_resolve_tool_whitelist_falls_back_to_manifest():
 
 
 def test_resolve_tool_whitelist_allows_all_when_empty():
+    """Returns None when no tool restrictions are configured."""
     identity = Identity.create_default("default")
     identity.tool_manifest = []
     identity.tool_whitelist = None

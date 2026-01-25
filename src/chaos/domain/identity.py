@@ -13,6 +13,13 @@ from chaos.domain.stm_search_config import StmSearchConfig
 from chaos.domain.tuning_policy import TuningPolicy
 
 SCHEMA_VERSION = "1.0"
+IDENTITY_IMPLICIT_TUNING_BLACKLIST = [
+    "schema_version",
+    "tuning_policy",
+    "memory.subconscious",
+    "memory.actor",
+    "loop_definition",
+]
 
 
 def agent_id_from_path(identity_path: Path) -> str:
@@ -201,6 +208,16 @@ class Identity(BaseModel):
         """
         return self._agent_id
 
+    @property
+    def implicit_tuning_blacklist(self) -> List[str]:
+        """
+        Returns the implicit tuning policy blacklist for this identity.
+
+        Returns:
+            The implicit blacklist entries enforced by the system.
+        """
+        return list(IDENTITY_IMPLICIT_TUNING_BLACKLIST)
+
     def set_agent_id(self, agent_id: str) -> None:
         """
         Sets the agent id on this identity.
@@ -289,11 +306,20 @@ class Identity(BaseModel):
         identity.set_agent_id(agent_id_from_path(path))
         return identity
 
-    def patch_instructions(self, note: str) -> None:
+    def patch_instructions(self, note: str) -> bool:
         """
         Updates the operational notes with a new learning.
 
         Args:
             note: The new instruction or observation to add.
+
+        Returns:
+            True if the note was added, otherwise False.
         """
+        allowed = self.tuning_policy.is_allowed(
+            "instructions.operational_notes", self.implicit_tuning_blacklist
+        )
+        if not allowed:
+            return False
         self.instructions.operational_notes.append(note)
+        return True

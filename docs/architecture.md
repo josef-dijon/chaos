@@ -137,8 +137,14 @@ Minimal identity example (conceptual):
     }
   },
   "tuning_policy": {
-    "allow_subconscious_identity_updates": true,
-    "allow_subconscious_memory_tuning": false
+    "whitelist": ["instructions.operational_notes"],
+    "blacklist": [
+      "schema_version",
+      "tuning_policy",
+      "memory.subconscious",
+      "memory.actor",
+      "loop_definition"
+    ]
   }
 }
 ```
@@ -454,8 +460,11 @@ Learning steps (conceptual):
 5. **Apply patch:** If the score improves, patch Identity on disk.
 
 Tuning levers:
-* The Subconscious may also propose memory heuristic tuning (STM search heuristics / window sizes).
-* Whether those changes can be applied automatically is controlled by `tuning_policy.allow_subconscious_memory_tuning`.
+* The Subconscious may propose identity updates using dot-separated paths.
+* Automatic application is controlled by `tuning_policy` allow/deny lists.
+* Blacklist entries override whitelist entries, including parent-path scoping.
+* The system enforces an implicit blacklist for `schema_version`, `tuning_policy`,
+  `memory.subconscious`, `memory.actor`, and `loop_definition`.
 
 ### **3.2 The Dreaming Cycle**
 

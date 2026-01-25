@@ -148,8 +148,7 @@ class Agent:
         note = self.subconscious.execute(prompt)
 
         # Patch and Save
-        if self.identity.tuning_policy.allow_subconscious_identity_updates:
-            self.identity.patch_instructions(note)
+        if self.identity.patch_instructions(note):
             self.identity.save(self.identity_path)
         self.memory.finalize_loop(persona="subconscious", loop_id=loop_id)
         return note

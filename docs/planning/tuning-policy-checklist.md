@@ -1,0 +1,6 @@
+- [ ] Update architecture spec for tuning policy allow/deny lists and implicit blacklist.
+- [ ] Refactor `TuningPolicy` to `whitelist`/`blacklist` schema with path scoping rules.
+- [ ] Add implicit blacklist constants in `Identity` and enforce in mutation paths.
+- [ ] Update `Agent.learn` to use the new policy check.
+- [ ] Add/adjust unit tests for scoping, precedence, and implicit blacklist behavior.
+- [ ] Run tests via `uv` and address failures.

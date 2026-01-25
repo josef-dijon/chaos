@@ -8,6 +8,7 @@ from chaos.infra.memory_container import VISIBILITY_EXTERNAL
 
 @pytest.fixture
 def mock_dependencies():
+    """Provides mocked dependencies for Agent tests."""
     with (
         patch("chaos.core.agent.Identity") as mock_ident,
         patch("chaos.core.agent.BasicAgent") as mock_basic,
@@ -24,7 +25,7 @@ def mock_dependencies():
         mock_ident.return_value = mock_ident_instance
         mock_ident_instance.profile.role = "tester"
         mock_ident_instance.agent_id = "tester"
-        mock_ident_instance.tuning_policy.allow_subconscious_identity_updates = True
+        mock_ident_instance.patch_instructions.return_value = True
 
         mock_mem_instance = MagicMock()
         mock_mem.return_value = mock_mem_instance
@@ -46,6 +47,7 @@ def mock_dependencies():
 
 
 def test_agent_init_existing_identity(mock_dependencies):
+    """Initializes an agent using an existing identity file."""
     mocks = mock_dependencies
     with patch("pathlib.Path.exists", return_value=True):
         agent = Agent(identity_path=Path("dummy_path"))
@@ -90,6 +92,7 @@ def test_agent_init_existing_identity(mock_dependencies):
 
 
 def test_agent_init_new_identity(mock_dependencies):
+    """Initializes a new identity when none exists."""
     mocks = mock_dependencies
     # First exists False (main), second exists True (subconscious fallback check) or False
 
@@ -103,6 +106,7 @@ def test_agent_init_new_identity(mock_dependencies):
 
 
 def test_agent_do(mock_dependencies):
+    """Executes a task and records tool events."""
     mocks = mock_dependencies
 
     # Setup actor mock specifically
@@ -179,6 +183,7 @@ def test_agent_do(mock_dependencies):
 
 
 def test_agent_learn(mock_dependencies):
+    """Runs the learning flow and persists the identity update."""
     mocks = mock_dependencies
     mock_actor = MagicMock()
     mock_sub = MagicMock()
@@ -214,6 +219,7 @@ def test_agent_learn(mock_dependencies):
 
 
 def test_agent_dream(mock_dependencies):
+    """Confirms the dream cycle stub response."""
     with patch("pathlib.Path.exists", return_value=True):
         agent = Agent(Path("dummy"))
     assert agent.dream() == "Dream cycle complete (Stub)."
