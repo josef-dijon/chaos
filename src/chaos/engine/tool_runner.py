@@ -4,7 +4,7 @@ from typing import Any, List, Mapping, Sequence
 
 from langchain_core.messages import ToolMessage
 
-from agent_of_chaos.infra.tools import ToolLibrary
+from chaos.infra.tools import ToolLibrary
 
 
 class ToolRunner:

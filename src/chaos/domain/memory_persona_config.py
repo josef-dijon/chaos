@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field
 
-from agent_of_chaos.domain.stm_search_config import StmSearchConfig
+from chaos.domain.stm_search_config import StmSearchConfig
 
 
 class MemoryPersonaConfig(BaseModel):

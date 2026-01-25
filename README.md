@@ -88,15 +88,15 @@ uv sync
 ### Usage
 1. **Initialize a new Agent Identity:**
    ```bash
-   uv run python -m agent_of_chaos.cli.main init
+   uv run python -m chaos.cli.main init
    ```
 2. **Execute a task (The Actor):**
    ```bash
-   uv run python -m agent_of_chaos.cli.main do "Research the project structure"
+   uv run python -m chaos.cli.main do "Research the project structure"
    ```
 3. **Trigger a learning cycle (The Subconscious):**
    ```bash
-   uv run python -m agent_of_chaos.cli.main learn "You were too verbose in the last response."
+   uv run python -m chaos.cli.main learn "You were too verbose in the last response."
    ```
 
 ## Development Standards

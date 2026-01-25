@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Optional
 
-from agent_of_chaos.config import Config
+from chaos.config import Config
 
 
 class ConfigProvider:

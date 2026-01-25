@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from agent_of_chaos.config import Config
-from agent_of_chaos.config_provider import ConfigProvider
+from chaos.config import Config
+from chaos.config_provider import ConfigProvider
 
 
 def test_config_load_defaults(tmp_path: Path) -> None:

@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field
 
-from agent_of_chaos.domain.search_weights import SearchWeights
+from chaos.domain.search_weights import SearchWeights
 
 
 class StmSearchConfig(BaseModel):

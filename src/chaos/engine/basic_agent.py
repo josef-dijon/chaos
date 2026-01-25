@@ -8,17 +8,17 @@ from langchain_core.messages import (
     ToolMessage,
 )
 from langchain_openai import ChatOpenAI
-from agent_of_chaos.domain import Identity
-from agent_of_chaos.domain.memory_event_kind import MemoryEventKind
-from agent_of_chaos.infra.memory import MemoryView
-from agent_of_chaos.infra.skills import SkillsLibrary
-from agent_of_chaos.infra.knowledge import KnowledgeLibrary
-from agent_of_chaos.infra.tools import ToolLibrary
-from agent_of_chaos.config import Config
-from agent_of_chaos.engine.agent_context import AgentContext
-from agent_of_chaos.engine.context_retriever import ContextRetriever
-from agent_of_chaos.engine.prompt_builder import PromptBuilder
-from agent_of_chaos.engine.tool_runner import ToolRunner
+from chaos.domain import Identity
+from chaos.domain.memory_event_kind import MemoryEventKind
+from chaos.infra.memory import MemoryView
+from chaos.infra.skills import SkillsLibrary
+from chaos.infra.knowledge import KnowledgeLibrary
+from chaos.infra.tools import ToolLibrary
+from chaos.config import Config
+from chaos.engine.agent_context import AgentContext
+from chaos.engine.context_retriever import ContextRetriever
+from chaos.engine.prompt_builder import PromptBuilder
+from chaos.engine.tool_runner import ToolRunner
 import json
 
 

@@ -2,10 +2,10 @@
 
 from typing import List, TYPE_CHECKING
 
-from agent_of_chaos.infra.memory_view import MemoryView
+from chaos.infra.memory_view import MemoryView
 
 if TYPE_CHECKING:
-    from agent_of_chaos.infra.memory_container import MemoryContainer
+    from chaos.infra.memory_container import MemoryContainer
 
 
 class ActorMemoryView(MemoryView):

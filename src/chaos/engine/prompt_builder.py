@@ -4,8 +4,8 @@ from typing import List
 
 from langchain_core.messages import BaseMessage, SystemMessage
 
-from agent_of_chaos.domain import Identity
-from agent_of_chaos.domain.skill import Skill
+from chaos.domain import Identity
+from chaos.domain.skill import Skill
 
 
 class PromptBuilder:

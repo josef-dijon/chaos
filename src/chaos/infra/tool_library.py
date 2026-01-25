@@ -2,8 +2,8 @@
 
 from typing import Dict, List, Optional
 
-from agent_of_chaos.domain.tool import BaseTool
-from agent_of_chaos.infra.library import Library
+from chaos.domain.tool import BaseTool
+from chaos.infra.library import Library
 
 
 class ToolLibrary(Library[BaseTool]):

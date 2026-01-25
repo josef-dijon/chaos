@@ -1,17 +1,17 @@
 import json
 from pathlib import Path
 
-from agent_of_chaos.config import Config
-from agent_of_chaos.config_provider import ConfigProvider
-from agent_of_chaos.domain import Identity, agent_id_from_path
-from agent_of_chaos.domain.memory_event_kind import MemoryEventKind
+from chaos.config import Config
+from chaos.config_provider import ConfigProvider
+from chaos.domain import Identity, agent_id_from_path
+from chaos.domain.memory_event_kind import MemoryEventKind
 
-from agent_of_chaos.infra.memory import MemoryContainer
-from agent_of_chaos.infra.memory_container import VISIBILITY_EXTERNAL
-from agent_of_chaos.infra.skills import SkillsLibrary
-from agent_of_chaos.infra.knowledge import KnowledgeLibrary
-from agent_of_chaos.infra.tools import ToolLibrary, FileReadTool, FileWriteTool
-from agent_of_chaos.engine.basic_agent import BasicAgent
+from chaos.infra.memory import MemoryContainer
+from chaos.infra.memory_container import VISIBILITY_EXTERNAL
+from chaos.infra.skills import SkillsLibrary
+from chaos.infra.knowledge import KnowledgeLibrary
+from chaos.infra.tools import ToolLibrary, FileReadTool, FileWriteTool
+from chaos.engine.basic_agent import BasicAgent
 
 
 class Agent:

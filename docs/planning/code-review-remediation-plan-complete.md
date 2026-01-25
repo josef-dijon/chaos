@@ -70,8 +70,8 @@ Acceptance Criteria:
 This list will be used to centralize path handling in Phase 1.
 
 Code:
-- `src/agent_of_chaos/config.py` (DEFAULT_CHAOS_DIR, db path defaults, path validation)
-- `src/agent_of_chaos/cli/main.py` (CHAOS_DIR constant and identity path help text)
+- `src/chaos/config.py` (DEFAULT_CHAOS_DIR, db path defaults, path validation)
+- `src/chaos/cli/main.py` (CHAOS_DIR constant and identity path help text)
 
 Tests:
 - `tests/functional/conftest.py` (chroma/raw db paths)
@@ -150,7 +150,7 @@ Objective: Align with one-class-per-file rule and clean domain layering.
 
 Steps:
 1. Split domain models in `identity.py` into separate files by class.
-2. Add explicit re-exports in `src/agent_of_chaos/domain/__init__.py`.
+2. Add explicit re-exports in `src/chaos/domain/__init__.py`.
 3. Ensure each model has a full docstring and explicit validation notes.
 4. Update import paths across the codebase and tests.
 

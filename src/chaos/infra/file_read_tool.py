@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict
 
-from agent_of_chaos.domain.tool import BaseTool, ToolType
+from chaos.domain.tool import BaseTool, ToolType
 
 MAX_READ_BYTES = 1_000_000
 

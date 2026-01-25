@@ -3,8 +3,8 @@
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from agent_of_chaos.domain.memory_event_kind import MemoryEventKind
-from agent_of_chaos.infra.raw_memory_store import RawMemoryStore
+from chaos.domain.memory_event_kind import MemoryEventKind
+from chaos.infra.raw_memory_store import RawMemoryStore
 
 
 def test_raw_memory_store_records_events(tmp_path: Path) -> None:

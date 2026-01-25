@@ -1,5 +1,5 @@
 def main():
-    print("Hello from agent-of-chaos!")
+    print("Hello from chaos!")
 
 
 if __name__ == "__main__":

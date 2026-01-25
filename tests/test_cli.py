@@ -2,14 +2,14 @@ from typer.testing import CliRunner
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from agent_of_chaos.config import Config
-from agent_of_chaos.cli.main import app
+from chaos.config import Config
+from chaos.cli.main import app
 
 runner = CliRunner()
 
 
-@patch("agent_of_chaos.cli.main.ConfigProvider")
-@patch("agent_of_chaos.cli.main.Agent")
+@patch("chaos.cli.main.ConfigProvider")
+@patch("chaos.cli.main.Agent")
 @patch("pathlib.Path.exists")
 def test_init_creates_identity(mock_exists, mock_agent, mock_config_provider):
     mock_exists.return_value = False
@@ -23,8 +23,8 @@ def test_init_creates_identity(mock_exists, mock_agent, mock_config_provider):
     mock_agent.return_value.close.assert_called_once()
 
 
-@patch("agent_of_chaos.cli.main.ConfigProvider")
-@patch("agent_of_chaos.cli.main.Agent")
+@patch("chaos.cli.main.ConfigProvider")
+@patch("chaos.cli.main.Agent")
 @patch("pathlib.Path.exists")
 def test_init_already_exists(mock_exists, mock_agent, mock_config_provider):
     mock_exists.return_value = True
@@ -38,8 +38,8 @@ def test_init_already_exists(mock_exists, mock_agent, mock_config_provider):
     mock_config_provider.return_value.load.assert_called()
 
 
-@patch("agent_of_chaos.cli.main.ConfigProvider")
-@patch("agent_of_chaos.cli.main.Agent")
+@patch("chaos.cli.main.ConfigProvider")
+@patch("chaos.cli.main.Agent")
 def test_do(mock_agent, mock_config_provider):
     mock_config_provider.return_value.load.return_value = Config(
         chaos_dir=Path(".chaos")
@@ -52,8 +52,8 @@ def test_do(mock_agent, mock_config_provider):
     mock_agent.return_value.close.assert_called_once()
 
 
-@patch("agent_of_chaos.cli.main.ConfigProvider")
-@patch("agent_of_chaos.cli.main.Agent")
+@patch("chaos.cli.main.ConfigProvider")
+@patch("chaos.cli.main.Agent")
 def test_learn(mock_agent, mock_config_provider):
     mock_config_provider.return_value.load.return_value = Config(
         chaos_dir=Path(".chaos")
@@ -66,8 +66,8 @@ def test_learn(mock_agent, mock_config_provider):
     mock_agent.return_value.close.assert_called_once()
 
 
-@patch("agent_of_chaos.cli.main.ConfigProvider")
-@patch("agent_of_chaos.cli.main.Agent")
+@patch("chaos.cli.main.ConfigProvider")
+@patch("chaos.cli.main.Agent")
 def test_dream(mock_agent, mock_config_provider):
     mock_config_provider.return_value.load.return_value = Config(
         chaos_dir=Path(".chaos")

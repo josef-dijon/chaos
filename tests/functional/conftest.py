@@ -7,8 +7,8 @@ from typer.testing import CliRunner
 import vcr
 from vcr.record_mode import RecordMode
 
-from agent_of_chaos.config import Config
-from agent_of_chaos.config_provider import ConfigProvider
+from chaos.config import Config
+from chaos.config_provider import ConfigProvider
 
 
 CASSETTE_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "vcr"

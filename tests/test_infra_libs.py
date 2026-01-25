@@ -3,16 +3,16 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch, call
 
-from agent_of_chaos.config import Config
-from agent_of_chaos.infra.file_read_tool import MAX_READ_BYTES
-from agent_of_chaos.infra.file_write_tool import MAX_WRITE_BYTES
-from agent_of_chaos.infra.knowledge import KnowledgeLibrary
-from agent_of_chaos.infra.tools import ToolLibrary, FileReadTool, FileWriteTool
+from chaos.config import Config
+from chaos.infra.file_read_tool import MAX_READ_BYTES
+from chaos.infra.file_write_tool import MAX_WRITE_BYTES
+from chaos.infra.knowledge import KnowledgeLibrary
+from chaos.infra.tools import ToolLibrary, FileReadTool, FileWriteTool
 
 # --- KnowledgeLibrary Tests ---
 
 
-@patch("agent_of_chaos.infra.knowledge.chromadb.PersistentClient")
+@patch("chaos.infra.knowledge.chromadb.PersistentClient")
 def test_knowledge_add_document(mock_chroma):
     mock_collection = MagicMock()
     mock_chroma.return_value.get_or_create_collection.return_value = mock_collection
@@ -29,7 +29,7 @@ def test_knowledge_add_document(mock_chroma):
     assert args["metadatas"][0]["meta"] == "data"
 
 
-@patch("agent_of_chaos.infra.knowledge.chromadb.PersistentClient")
+@patch("chaos.infra.knowledge.chromadb.PersistentClient")
 def test_knowledge_search(mock_chroma):
     mock_collection = MagicMock()
     mock_chroma.return_value.get_or_create_collection.return_value = mock_collection
@@ -55,7 +55,7 @@ def test_knowledge_search(mock_chroma):
     )
 
 
-@patch("agent_of_chaos.infra.knowledge.chromadb.PersistentClient")
+@patch("chaos.infra.knowledge.chromadb.PersistentClient")
 def test_knowledge_error_handling(mock_chroma):
     mock_collection = MagicMock()
     mock_chroma.return_value.get_or_create_collection.return_value = mock_collection
@@ -152,7 +152,7 @@ def test_file_write_tool_rejects_large_content():
     assert "size_limit" in tool.call({"file_path": "foo.txt", "content": content})
 
 
-@patch("agent_of_chaos.infra.file_write_tool.tempfile.NamedTemporaryFile")
+@patch("chaos.infra.file_write_tool.tempfile.NamedTemporaryFile")
 def test_file_write_tool_handles_temp_error(mock_temp):
     tool = FileWriteTool(root=Path("."))
     mock_temp.side_effect = Exception("Error")

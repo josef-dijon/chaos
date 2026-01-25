@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
 import pytest
 from pydantic import ValidationError
-from agent_of_chaos.domain.knowledge import KnowledgeItem
-from agent_of_chaos.domain.tool import BaseTool, ToolType
+from chaos.domain.knowledge import KnowledgeItem
+from chaos.domain.tool import BaseTool, ToolType
 
 
 def test_knowledge_item_creation():

@@ -4,13 +4,13 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
 
-from agent_of_chaos.domain.instructions import Instructions
-from agent_of_chaos.domain.memory_config import MemoryConfig
-from agent_of_chaos.domain.memory_persona_config import MemoryPersonaConfig
-from agent_of_chaos.domain.profile import Profile
-from agent_of_chaos.domain.search_weights import SearchWeights
-from agent_of_chaos.domain.stm_search_config import StmSearchConfig
-from agent_of_chaos.domain.tuning_policy import TuningPolicy
+from chaos.domain.instructions import Instructions
+from chaos.domain.memory_config import MemoryConfig
+from chaos.domain.memory_persona_config import MemoryPersonaConfig
+from chaos.domain.profile import Profile
+from chaos.domain.search_weights import SearchWeights
+from chaos.domain.stm_search_config import StmSearchConfig
+from chaos.domain.tuning_policy import TuningPolicy
 
 SCHEMA_VERSION = "1.0"
 

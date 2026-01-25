@@ -4,21 +4,21 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from agent_of_chaos.config import Config
-from agent_of_chaos.domain.memory_event_kind import MemoryEventKind
-from agent_of_chaos.domain import Identity
-from agent_of_chaos.infra.memory import MemoryContainer
-from agent_of_chaos.infra.memory_container import STM_MAX_LINES
-from agent_of_chaos.infra.raw_memory_store import IdeticEvent
+from chaos.config import Config
+from chaos.domain.memory_event_kind import MemoryEventKind
+from chaos.domain import Identity
+from chaos.infra.memory import MemoryContainer
+from chaos.infra.memory_container import STM_MAX_LINES
+from chaos.infra.raw_memory_store import IdeticEvent
 
 
 @pytest.fixture
 def memory_deps():
     identity = Identity.create_default("agent")
     with (
-        patch("agent_of_chaos.infra.memory_container.RawMemoryStore") as mock_raw,
+        patch("chaos.infra.memory_container.RawMemoryStore") as mock_raw,
         patch(
-            "agent_of_chaos.infra.memory_container.chromadb.PersistentClient"
+            "chaos.infra.memory_container.chromadb.PersistentClient"
         ) as mock_chroma,
     ):
         config = MagicMock(spec=Config)

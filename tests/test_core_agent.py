@@ -1,21 +1,21 @@
 import pytest
 from unittest.mock import MagicMock, patch, call, ANY
 from pathlib import Path
-from agent_of_chaos.core.agent import Agent
-from agent_of_chaos.domain.memory_event_kind import MemoryEventKind
-from agent_of_chaos.infra.memory_container import VISIBILITY_EXTERNAL
+from chaos.core.agent import Agent
+from chaos.domain.memory_event_kind import MemoryEventKind
+from chaos.infra.memory_container import VISIBILITY_EXTERNAL
 
 
 @pytest.fixture
 def mock_dependencies():
     with (
-        patch("agent_of_chaos.core.agent.Identity") as mock_ident,
-        patch("agent_of_chaos.core.agent.BasicAgent") as mock_basic,
-        patch("agent_of_chaos.core.agent.MemoryContainer") as mock_mem,
-        patch("agent_of_chaos.core.agent.ToolLibrary") as mock_tools,
-        patch("agent_of_chaos.core.agent.SkillsLibrary") as mock_skills,
-        patch("agent_of_chaos.core.agent.KnowledgeLibrary") as mock_know,
-        patch("agent_of_chaos.core.agent.ConfigProvider") as mock_config_provider,
+        patch("chaos.core.agent.Identity") as mock_ident,
+        patch("chaos.core.agent.BasicAgent") as mock_basic,
+        patch("chaos.core.agent.MemoryContainer") as mock_mem,
+        patch("chaos.core.agent.ToolLibrary") as mock_tools,
+        patch("chaos.core.agent.SkillsLibrary") as mock_skills,
+        patch("chaos.core.agent.KnowledgeLibrary") as mock_know,
+        patch("chaos.core.agent.ConfigProvider") as mock_config_provider,
     ):
         # Setup common returns
         mock_ident_instance = MagicMock()

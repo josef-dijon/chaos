@@ -1,4 +1,4 @@
-from agent_of_chaos.infra.library import Library, NamedItem
+from chaos.infra.library import Library, NamedItem
 from dataclasses import dataclass
 from typing import List
 

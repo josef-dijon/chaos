@@ -1,8 +1,8 @@
 import chromadb
 import uuid
 from typing import List, Optional, Dict, Any
-from agent_of_chaos.config import Config
-from agent_of_chaos.infra.utils import logger
+from chaos.config import Config
+from chaos.infra.utils import logger
 
 
 class KnowledgeLibrary:

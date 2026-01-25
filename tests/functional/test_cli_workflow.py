@@ -1,4 +1,4 @@
-from agent_of_chaos.cli.main import app
+from chaos.cli.main import app
 from pathlib import Path
 
 

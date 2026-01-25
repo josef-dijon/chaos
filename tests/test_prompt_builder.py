@@ -2,9 +2,9 @@
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from agent_of_chaos.domain import Identity
-from agent_of_chaos.domain.skill import Skill
-from agent_of_chaos.engine.prompt_builder import PromptBuilder
+from chaos.domain import Identity
+from chaos.domain.skill import Skill
+from chaos.engine.prompt_builder import PromptBuilder
 
 
 def test_build_system_prompt_includes_identity_and_notes() -> None:

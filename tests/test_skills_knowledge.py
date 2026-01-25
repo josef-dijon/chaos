@@ -1,6 +1,6 @@
-from agent_of_chaos.infra.skills import SkillsLibrary
-from agent_of_chaos.domain.skill import Skill
-from agent_of_chaos.infra.skills import SkillsLibrary
+from chaos.infra.skills import SkillsLibrary
+from chaos.domain.skill import Skill
+from chaos.infra.skills import SkillsLibrary
 
 
 def test_skills_filtering():

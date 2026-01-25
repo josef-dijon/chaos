@@ -6,7 +6,7 @@ Refactor `Soul` to `Identity` and expand the BasicAgent architecture to include 
 ## 1. Refactor: Soul -> Identity
 - **Goal:** Rename core classes to avoid religious undertones.
 - **Changes:**
-    - `src/agent_of_chaos/domain/soul.py` -> `src/agent_of_chaos/domain/identity.py`
+    - `src/chaos/domain/soul.py` -> `src/chaos/domain/identity.py`
     - Class `Soul` -> Class `Identity`
     - Class `Identity` (inner) -> Class `Profile`
     - Update references in `BasicAgent`, `Agent`, `main.py`, `tests`.
@@ -48,7 +48,7 @@ Refactor `Soul` to `Identity` and expand the BasicAgent architecture to include 
 
 ## 6. Subconscious Configuration
 - **Objective:** Create a standard configuration for the Subconscious.
-- **Action:** Create `src/agent_of_chaos/default_subconscious.json` to define the Subconscious profile and instructions.
+- **Action:** Create `src/chaos/default_subconscious.json` to define the Subconscious profile and instructions.
 
 ## 7. Verification
 - **Unit Tests:**

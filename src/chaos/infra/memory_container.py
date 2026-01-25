@@ -9,15 +9,15 @@ from uuid import uuid4
 
 import chromadb
 
-from agent_of_chaos.config import Config
-from agent_of_chaos.domain import Identity
-from agent_of_chaos.domain.memory_event_kind import MemoryEventKind
-from agent_of_chaos.infra.raw_memory_store import RawMemoryStore
-from agent_of_chaos.infra.utils import logger
+from chaos.config import Config
+from chaos.domain import Identity
+from chaos.domain.memory_event_kind import MemoryEventKind
+from chaos.infra.raw_memory_store import RawMemoryStore
+from chaos.infra.utils import logger
 
 if TYPE_CHECKING:
-    from agent_of_chaos.infra.actor_memory_view import ActorMemoryView
-    from agent_of_chaos.infra.subconscious_memory_view import SubconsciousMemoryView
+    from chaos.infra.actor_memory_view import ActorMemoryView
+    from chaos.infra.subconscious_memory_view import SubconsciousMemoryView
 
 VISIBILITY_EXTERNAL = "external"
 STM_MAX_LINES = 50
@@ -272,7 +272,7 @@ class MemoryContainer:
         Returns:
             The actor memory view.
         """
-        from agent_of_chaos.infra.actor_memory_view import ActorMemoryView
+        from chaos.infra.actor_memory_view import ActorMemoryView
 
         return ActorMemoryView(self)
 
@@ -283,6 +283,6 @@ class MemoryContainer:
         Returns:
             The subconscious memory view.
         """
-        from agent_of_chaos.infra.subconscious_memory_view import SubconsciousMemoryView
+        from chaos.infra.subconscious_memory_view import SubconsciousMemoryView
 
         return SubconsciousMemoryView(self)

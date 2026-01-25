@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 from uuid import uuid4
 
-from agent_of_chaos.domain.memory_event_kind import MemoryEventKind
-from agent_of_chaos.infra.utils import logger
+from chaos.domain.memory_event_kind import MemoryEventKind
+from chaos.infra.utils import logger
 
 RAW_SCHEMA_VERSION = "1"
 

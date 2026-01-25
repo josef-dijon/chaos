@@ -4,8 +4,8 @@ from unittest.mock import MagicMock
 
 from langchain_core.messages import HumanMessage
 
-from agent_of_chaos.domain import Identity
-from agent_of_chaos.engine.context_retriever import ContextRetriever
+from chaos.domain import Identity
+from chaos.engine.context_retriever import ContextRetriever
 
 
 def test_retrieve_returns_empty_without_messages() -> None:

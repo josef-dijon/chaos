@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 
-from agent_of_chaos.domain.memory_persona_config import MemoryPersonaConfig
+from chaos.domain.memory_persona_config import MemoryPersonaConfig
 
 
 class MemoryConfig(BaseModel):

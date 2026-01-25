@@ -1,14 +1,14 @@
 import pytest
 from unittest.mock import MagicMock, patch
 
-from agent_of_chaos.config import Config
-from agent_of_chaos.domain.memory_event_kind import MemoryEventKind
-from agent_of_chaos.domain import Identity
-from agent_of_chaos.infra.memory import MemoryContainer
+from chaos.config import Config
+from chaos.domain.memory_event_kind import MemoryEventKind
+from chaos.domain import Identity
+from chaos.infra.memory import MemoryContainer
 
 
-@patch("agent_of_chaos.infra.memory_container.RawMemoryStore")
-@patch("agent_of_chaos.infra.memory_container.chromadb.PersistentClient")
+@patch("chaos.infra.memory_container.RawMemoryStore")
+@patch("chaos.infra.memory_container.chromadb.PersistentClient")
 def test_memory_record_exception(mock_chroma, mock_raw):
     config = MagicMock(spec=Config)
     config.get_raw_db_path.return_value = "/tmp/raw.db"
@@ -32,8 +32,8 @@ def test_memory_record_exception(mock_chroma, mock_raw):
     )
 
 
-@patch("agent_of_chaos.infra.memory_container.RawMemoryStore")
-@patch("agent_of_chaos.infra.memory_container.chromadb.PersistentClient")
+@patch("chaos.infra.memory_container.RawMemoryStore")
+@patch("chaos.infra.memory_container.chromadb.PersistentClient")
 def test_memory_retrieve_empty_and_exception(mock_chroma, mock_raw):
     config = MagicMock(spec=Config)
     config.get_raw_db_path.return_value = "/tmp/raw.db"

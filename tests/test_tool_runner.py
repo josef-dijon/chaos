@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock
 
-from agent_of_chaos.engine.tool_runner import ToolRunner
+from chaos.engine.tool_runner import ToolRunner
 
 
 def test_run_executes_tool_call() -> None:

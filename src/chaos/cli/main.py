@@ -1,9 +1,9 @@
 import typer
 from rich.console import Console
 from pathlib import Path
-from agent_of_chaos.config import Config, DEFAULT_CHAOS_DIR
-from agent_of_chaos.config_provider import ConfigProvider
-from agent_of_chaos.core.agent import Agent
+from chaos.config import Config, DEFAULT_CHAOS_DIR
+from chaos.config_provider import ConfigProvider
+from chaos.core.agent import Agent
 
 app = typer.Typer()
 console = Console()

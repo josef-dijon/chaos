@@ -6,7 +6,7 @@ from pathlib import Path
 import tempfile
 from typing import Any, Dict
 
-from agent_of_chaos.domain.tool import BaseTool, ToolType
+from chaos.domain.tool import BaseTool, ToolType
 
 MAX_WRITE_BYTES = 1_000_000
 

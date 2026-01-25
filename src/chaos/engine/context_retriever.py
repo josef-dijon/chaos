@@ -4,9 +4,9 @@ from typing import List
 
 from langchain_core.messages import BaseMessage, HumanMessage
 
-from agent_of_chaos.domain import Identity
-from agent_of_chaos.infra.knowledge import KnowledgeLibrary
-from agent_of_chaos.infra.memory import MemoryView
+from chaos.domain import Identity
+from chaos.infra.knowledge import KnowledgeLibrary
+from chaos.infra.memory import MemoryView
 
 
 class ContextRetriever:

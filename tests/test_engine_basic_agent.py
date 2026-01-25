@@ -1,9 +1,9 @@
 import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch, call
-from agent_of_chaos.config import Config
-from agent_of_chaos.domain.skill import Skill
-from agent_of_chaos.engine.basic_agent import BasicAgent, AgentState
+from chaos.config import Config
+from chaos.domain.skill import Skill
+from chaos.engine.basic_agent import BasicAgent, AgentState
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage, SystemMessage
 
 
@@ -44,16 +44,16 @@ def mock_deps():
     }
 
 
-@patch("agent_of_chaos.engine.basic_agent.ChatOpenAI")
-@patch("agent_of_chaos.engine.basic_agent.StateGraph")
+@patch("chaos.engine.basic_agent.ChatOpenAI")
+@patch("chaos.engine.basic_agent.StateGraph")
 def test_init(mock_graph, mock_llm, mock_deps):
     agent = BasicAgent(**mock_deps)
     mock_llm.assert_called()
     mock_graph.assert_called()
 
 
-@patch("agent_of_chaos.engine.basic_agent.ChatOpenAI")
-@patch("agent_of_chaos.engine.basic_agent.StateGraph")
+@patch("chaos.engine.basic_agent.ChatOpenAI")
+@patch("chaos.engine.basic_agent.StateGraph")
 def test_init_invalid_loop_definition(mock_graph, mock_llm, mock_deps):
     mock_deps["identity"].loop_definition = "unsupported"
 
@@ -61,8 +61,8 @@ def test_init_invalid_loop_definition(mock_graph, mock_llm, mock_deps):
         BasicAgent(**mock_deps)
 
 
-@patch("agent_of_chaos.engine.basic_agent.ChatOpenAI")
-@patch("agent_of_chaos.engine.basic_agent.StateGraph")
+@patch("chaos.engine.basic_agent.ChatOpenAI")
+@patch("chaos.engine.basic_agent.StateGraph")
 def test_should_continue(mock_graph, mock_llm, mock_deps):
     agent = BasicAgent(**mock_deps)
 
@@ -77,8 +77,8 @@ def test_should_continue(mock_graph, mock_llm, mock_deps):
     assert agent.should_continue(state_no_tool) == "end"
 
 
-@patch("agent_of_chaos.engine.basic_agent.ChatOpenAI")
-@patch("agent_of_chaos.engine.basic_agent.StateGraph")
+@patch("chaos.engine.basic_agent.ChatOpenAI")
+@patch("chaos.engine.basic_agent.StateGraph")
 def test_recall(mock_graph, mock_llm, mock_deps):
     mock_deps["memory"].retrieve.return_value = "Memory 1"
     mock_deps["knowledge_lib"].search.return_value = "Knowledge 1"
@@ -104,8 +104,8 @@ def test_recall(mock_graph, mock_llm, mock_deps):
     )
 
 
-@patch("agent_of_chaos.engine.basic_agent.ChatOpenAI")
-@patch("agent_of_chaos.engine.basic_agent.StateGraph")
+@patch("chaos.engine.basic_agent.ChatOpenAI")
+@patch("chaos.engine.basic_agent.StateGraph")
 def test_recall_subconscious_full_access(mock_graph, mock_llm, mock_deps):
     mock_deps["identity"].knowledge_whitelist = ["restricted"]
     mock_deps["identity"].knowledge_blacklist = ["blocked"]
@@ -128,8 +128,8 @@ def test_recall_subconscious_full_access(mock_graph, mock_llm, mock_deps):
     )
 
 
-@patch("agent_of_chaos.engine.basic_agent.ChatOpenAI")
-@patch("agent_of_chaos.engine.basic_agent.StateGraph")
+@patch("chaos.engine.basic_agent.ChatOpenAI")
+@patch("chaos.engine.basic_agent.StateGraph")
 def test_reason_logic(mock_graph, mock_llm, mock_deps):
     # Setup
     mock_deps["identity"].tool_manifest = ["test_tool"]
@@ -194,8 +194,8 @@ def test_reason_logic(mock_graph, mock_llm, mock_deps):
     assert call_args[2].content == "Hi"
 
 
-@patch("agent_of_chaos.engine.basic_agent.ChatOpenAI")
-@patch("agent_of_chaos.engine.basic_agent.StateGraph")
+@patch("chaos.engine.basic_agent.ChatOpenAI")
+@patch("chaos.engine.basic_agent.StateGraph")
 def test_act(mock_graph, mock_llm, mock_deps):
     agent = BasicAgent(**mock_deps)
 
@@ -217,8 +217,8 @@ def test_act(mock_graph, mock_llm, mock_deps):
     mock_tool.call.assert_called_with({"arg": 1})
 
 
-@patch("agent_of_chaos.engine.basic_agent.ChatOpenAI")
-@patch("agent_of_chaos.engine.basic_agent.StateGraph")
+@patch("chaos.engine.basic_agent.ChatOpenAI")
+@patch("chaos.engine.basic_agent.StateGraph")
 def test_act_tool_error(mock_graph, mock_llm, mock_deps):
     agent = BasicAgent(**mock_deps)
 
@@ -236,8 +236,8 @@ def test_act_tool_error(mock_graph, mock_llm, mock_deps):
     assert "Error executing test_tool: Boom" in result["messages"][0].content
 
 
-@patch("agent_of_chaos.engine.basic_agent.ChatOpenAI")
-@patch("agent_of_chaos.engine.basic_agent.StateGraph")
+@patch("chaos.engine.basic_agent.ChatOpenAI")
+@patch("chaos.engine.basic_agent.StateGraph")
 def test_execute(mock_graph, mock_llm, mock_deps):
     agent = BasicAgent(**mock_deps)
 

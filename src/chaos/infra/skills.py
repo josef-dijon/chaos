@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional
-from agent_of_chaos.domain.skill import Skill
-from agent_of_chaos.infra.library import Library
+from chaos.domain.skill import Skill
+from chaos.infra.library import Library
 
 
 class SkillsLibrary(Library[Skill]):

@@ -2,7 +2,7 @@
 
 from langchain_core.messages import HumanMessage
 
-from agent_of_chaos.engine.agent_context import AgentContext
+from chaos.engine.agent_context import AgentContext
 
 
 def test_agent_context_defaults() -> None:

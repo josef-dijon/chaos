@@ -1,5 +1,5 @@
 [project]
-name = "agent-of-chaos"
+name = "chaos"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -23,7 +23,7 @@ dev = [
 ]
 
 [project.scripts]
-chaos = "agent_of_chaos.cli.main:app"
+chaos = "chaos.cli.main:app"
 
 [tool.uv]
 package = true
@@ -34,5 +34,5 @@ testpaths = ["tests"]
 addopts = "--cov --cov-report=term-missing --cov-fail-under=95"
 
 [tool.coverage.run]
-source = ["src/agent_of_chaos"]
+source = ["src/chaos"]
 omit = ["tests/*"]

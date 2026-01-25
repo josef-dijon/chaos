@@ -2,7 +2,7 @@
 
 import pytest
 
-from agent_of_chaos.infra.memory_view import MemoryView
+from chaos.infra.memory_view import MemoryView
 
 
 class DummyView(MemoryView):

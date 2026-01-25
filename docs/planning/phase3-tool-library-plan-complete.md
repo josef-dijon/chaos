@@ -10,7 +10,7 @@ Implement a centralized `ToolLibrary` and abstract a base `Library` class to sta
     - Ensure mutually exclusive validation logic applies to tools as well.
 
 ## 2. Infrastructure Refactor (Base Library)
-- **Create `src/agent_of_chaos/infra/library.py`:**
+- **Create `src/chaos/infra/library.py`:**
     - **Class `Library(ABC)`:**
         - Generic base class for registry-based libraries.
         - Method `register(item)`: Abstract.
@@ -22,7 +22,7 @@ Implement a centralized `ToolLibrary` and abstract a base `Library` class to sta
 - **Refactor `SkillsLibrary`:**
     - Inherit from `Library`.
     - Use `apply_access_control` for filtering.
-- **Implement `ToolLibrary` (`src/agent_of_chaos/infra/tools.py`):**
+- **Implement `ToolLibrary` (`src/chaos/infra/tools.py`):**
     - Inherit from `Library`.
     - Registry mapping `name` -> `Tool`.
     - Methods: `register`, `get`, `list`, `filter_tools`.
