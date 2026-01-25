@@ -465,6 +465,8 @@ Tuning levers:
 * Blacklist entries override whitelist entries, including parent-path scoping.
 * The system enforces an implicit blacklist for `schema_version`, `tuning_policy`,
   `memory.subconscious`, `memory.actor`, and `loop_definition`.
+* The Subconscious receives a masked identity and masked schema filtered by the
+  tuning policy, with per-field weights included in the schema.
 
 ### **3.2 The Dreaming Cycle**
 

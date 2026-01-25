@@ -71,7 +71,7 @@ class BasicAgent:
             model=self.config.get_model_name(),
             api_key=self.config.get_openai_api_key(),  # type: ignore
         )
-        self.prompt_builder = PromptBuilder(self.identity)
+        self.prompt_builder = PromptBuilder(self.identity, persona=self.persona)
         self.context_retriever = ContextRetriever(
             identity=self.identity,
             memory=self.memory,
@@ -127,7 +127,7 @@ class BasicAgent:
             None.
         """
         self.identity = Identity.load(self.identity_path)
-        self.prompt_builder = PromptBuilder(self.identity)
+        self.prompt_builder = PromptBuilder(self.identity, persona=self.persona)
         self.context_retriever = ContextRetriever(
             identity=self.identity,
             memory=self.memory,

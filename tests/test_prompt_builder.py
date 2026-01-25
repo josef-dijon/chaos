@@ -38,3 +38,19 @@ def test_build_messages_inserts_context() -> None:
     assert isinstance(messages[0], SystemMessage)
     assert isinstance(messages[1], SystemMessage)
     assert "Relevant Context: LTM: context" in messages[1].content
+
+
+def test_build_system_prompt_for_subconscious_is_masked() -> None:
+    """Builds a subconscious prompt with masked identity and schema."""
+    identity = Identity.create_default(agent_id="tester")
+    identity.instructions.operational_notes.append("Prefer detailed summaries.")
+    skills = [Skill(name="audit", description="", content="Check logs")]
+
+    builder = PromptBuilder(identity, persona="subconscious")
+    prompt = builder.build_system_prompt(skills)
+
+    assert "Subconscious Tuning Context" in prompt
+    assert "Masked Identity" in prompt
+    assert "Masked Identity Schema" in prompt
+    assert "Prefer detailed summaries." in prompt
+    assert "schema_version" not in prompt

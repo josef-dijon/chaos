@@ -46,11 +46,19 @@ class TuningPolicy(BaseModel):
 
     whitelist: List[str] = Field(
         default_factory=lambda: ["instructions.operational_notes"],
-        description="Allowed dot-separated identity paths.",
+        description=(
+            "Allowed dot-separated identity paths. A parent path grants access to "
+            "all child fields."
+        ),
+        json_schema_extra={"weight": 9},
     )
     blacklist: List[str] = Field(
         default_factory=list,
-        description="Forbidden dot-separated identity paths.",
+        description=(
+            "Forbidden dot-separated identity paths. Any covered path is always "
+            "blocked, even if whitelisted."
+        ),
+        json_schema_extra={"weight": 9},
     )
 
     model_config = ConfigDict(extra="forbid")

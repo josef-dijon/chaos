@@ -13,10 +13,20 @@ class Instructions(BaseModel):
     """
 
     operational_notes: List[str] = Field(
-        default_factory=list, description="Mutable notes learned from experience."
+        default_factory=list,
+        description=(
+            "Mutable operational notes learned from experience. These are the "
+            "primary tunable behavior adjustments."
+        ),
+        json_schema_extra={"weight": 2},
     )
     system_prompts: List[str] = Field(
-        default_factory=list, description="Base system prompts defining behavior."
+        default_factory=list,
+        description=(
+            "Base system prompts defining behavior and guardrails. These should "
+            "change only with care."
+        ),
+        json_schema_extra={"weight": 8},
     )
 
     model_config = ConfigDict(extra="forbid")

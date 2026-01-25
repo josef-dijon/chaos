@@ -1,6 +1,6 @@
 from pathlib import Path
 import json
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
 
@@ -135,63 +135,257 @@ def _memory_config_for_agent(agent_id: str) -> MemoryConfig:
     return MemoryConfig(actor=actor_config, subconscious=subconscious_config)
 
 
-class Identity(BaseModel):
+def _inline_schema_refs(schema: dict) -> Dict[str, Any]:
     """
-    The persistent state of an agent, containing profile, instructions, and capabilities.
+    Inlines JSON schema $ref references for easier masking.
 
     Args:
-        schema_version: Identity schema version.
-        profile: Immutable identity profile.
-        instructions: Mutable operational instructions.
-        loop_definition: Loop definition identifier.
-        tool_manifest: List of allowed tool names.
-        memory: Memory configuration for actor and subconscious.
-        tuning_policy: Identity tuning policy settings.
-        skills_whitelist: Allowed skills (null = all).
-        skills_blacklist: Forbidden skills.
-        knowledge_whitelist: Allowed knowledge domains (null = all).
-        knowledge_blacklist: Forbidden knowledge domains.
-        tool_whitelist: Allowed tools (null = all).
-        tool_blacklist: Forbidden tools.
+        schema: The JSON schema to inline.
+
+    Returns:
+        A schema with $ref references replaced by definitions.
+    """
+    definitions = schema.get("$defs", {})
+
+    def _resolve(node: object) -> object:
+        if isinstance(node, dict):
+            if "$ref" in node:
+                ref = node["$ref"]
+                if isinstance(ref, str) and ref.startswith("#/$defs/"):
+                    key = ref.split("/")[-1]
+                    resolved = definitions.get(key, {})
+                    resolved_payload = _resolve(resolved)
+                    merged = {k: v for k, v in node.items() if k != "$ref"}
+                    if isinstance(resolved_payload, dict):
+                        return {**resolved_payload, **merged}
+                    return resolved_payload
+            return {k: _resolve(v) for k, v in node.items() if k != "$defs"}
+        if isinstance(node, list):
+            return [_resolve(item) for item in node]
+        return node
+
+    resolved = _resolve(schema)
+    if isinstance(resolved, dict):
+        return cast(Dict[str, Any], resolved)
+    return {}
+
+
+def _schema_has_tunable_content(schema: dict) -> bool:
+    """
+    Determines whether a masked schema node contains tunable fields.
+
+    Args:
+        schema: The schema node to evaluate.
+
+    Returns:
+        True if the schema contains tunable content.
+    """
+    if not schema:
+        return False
+    properties = schema.get("properties")
+    if isinstance(properties, dict) and properties:
+        return True
+    if "items" in schema and schema.get("items"):
+        return True
+    return False
+
+
+def _mask_schema(
+    schema: dict,
+    tuning_policy: TuningPolicy,
+    implicit_blacklist: List[str],
+    prefix: str = "",
+) -> Dict[str, Any]:
+    """
+    Masks a JSON schema based on tuning policy rules.
+
+    Args:
+        schema: The schema node to mask.
+        tuning_policy: The tuning policy to enforce.
+        implicit_blacklist: Always-blocked paths enforced by the system.
+        prefix: The dot-path prefix for the schema node.
+
+    Returns:
+        The masked schema node.
+    """
+    if not schema:
+        return {}
+    properties = schema.get("properties")
+    if isinstance(properties, dict):
+        masked_properties: dict[str, dict] = {}
+        required_fields = set(schema.get("required", []))
+        new_required: list[str] = []
+        for name, prop_schema in properties.items():
+            path = f"{prefix}.{name}" if prefix else name
+            masked_prop = _mask_schema(
+                prop_schema, tuning_policy, implicit_blacklist, path
+            )
+            allowed = tuning_policy.is_allowed(path, implicit_blacklist)
+            if not allowed and not _schema_has_tunable_content(masked_prop):
+                continue
+            if not masked_prop and not allowed:
+                continue
+            if not masked_prop and allowed:
+                continue
+            masked_properties[name] = masked_prop
+            if name in required_fields:
+                new_required.append(name)
+        updated = dict(schema)
+        updated["properties"] = masked_properties
+        if new_required:
+            updated["required"] = new_required
+        else:
+            updated.pop("required", None)
+        if not _schema_has_tunable_content(updated):
+            return {}
+        return updated
+    if "items" in schema:
+        updated = dict(schema)
+        updated["items"] = _mask_schema(
+            schema.get("items", {}),
+            tuning_policy,
+            implicit_blacklist,
+            prefix,
+        )
+        return updated
+    if prefix and not tuning_policy.is_allowed(prefix, implicit_blacklist):
+        return {}
+    return dict(schema)
+
+
+def _mask_payload(
+    payload: dict,
+    tuning_policy: TuningPolicy,
+    implicit_blacklist: List[str],
+    prefix: str = "",
+) -> dict:
+    """
+    Masks an identity payload based on tuning policy rules.
+
+    Args:
+        payload: The payload to mask.
+        tuning_policy: The tuning policy to enforce.
+        implicit_blacklist: Always-blocked paths enforced by the system.
+        prefix: The dot-path prefix for the payload node.
+
+    Returns:
+        The masked payload.
+    """
+    masked: Dict[str, Any] = {}
+    for key, value in payload.items():
+        path = f"{prefix}.{key}" if prefix else key
+        allowed = tuning_policy.is_allowed(path, implicit_blacklist)
+        if isinstance(value, dict):
+            masked_child = _mask_payload(value, tuning_policy, implicit_blacklist, path)
+            if allowed or masked_child:
+                masked[key] = masked_child
+            continue
+        if isinstance(value, list):
+            if allowed:
+                masked[key] = value
+            continue
+        if allowed:
+            masked[key] = value
+    return masked
+
+
+class Identity(BaseModel):
+    """
+    The persistent state of an agent, containing profile, instructions, memory,
+    and capability access rules.
     """
 
     schema_version: str = Field(
-        default=SCHEMA_VERSION, description="Identity schema version."
+        default=SCHEMA_VERSION,
+        description=(
+            "Identity schema version for compatibility checks. This should not be "
+            "changed by tuning workflows."
+        ),
+        json_schema_extra={"weight": 10},
     )
-    profile: Profile
-    instructions: Instructions
+    profile: Profile = Field(
+        ...,
+        description="Identity profile containing name, role, and core values.",
+        json_schema_extra={"weight": 9},
+    )
+    instructions: Instructions = Field(
+        ...,
+        description=(
+            "Instruction set for system prompts and operational notes. "
+            "Operational notes are the primary tunable behavior updates."
+        ),
+        json_schema_extra={"weight": 8},
+    )
     loop_definition: str = Field(
-        default="default", description="Loop definition identifier."
+        default="default",
+        description=(
+            "Loop definition identifier that selects the agent reasoning flow. "
+            "Changing this alters the core loop behavior."
+        ),
+        json_schema_extra={"weight": 10},
     )
     tool_manifest: List[str] = Field(
-        default_factory=list, description="List of allowed tool names."
+        default_factory=list,
+        description=(
+            "Legacy list of allowed tool names. When tool_whitelist is set, "
+            "it overrides this list."
+        ),
+        json_schema_extra={"weight": 6},
     )
     memory: MemoryConfig = Field(
         default_factory=_default_memory_config,
-        description="Memory configuration for actor and subconscious.",
+        description=(
+            "Memory configuration for actor and subconscious personas, including "
+            "STM behavior and collection names."
+        ),
+        json_schema_extra={"weight": 8},
     )
     tuning_policy: TuningPolicy = Field(
-        default_factory=TuningPolicy, description="Identity tuning policy settings."
+        default_factory=TuningPolicy,
+        description=(
+            "Tuning policy that declares which identity paths the subconscious "
+            "may modify."
+        ),
+        json_schema_extra={"weight": 10},
     )
 
     # Access Control (Phase 2 Expansion)
     skills_whitelist: Optional[List[str]] = Field(
-        default=None, description="Allowed skills (null = all)."
+        default=None,
+        description=(
+            "Explicit list of allowed skill names. Null means all skills are available."
+        ),
+        json_schema_extra={"weight": 7},
     )
     skills_blacklist: Optional[List[str]] = Field(
-        default=None, description="Forbidden skills."
+        default=None,
+        description="Explicit list of forbidden skill names.",
+        json_schema_extra={"weight": 7},
     )
     knowledge_whitelist: Optional[List[str]] = Field(
-        default=None, description="Allowed knowledge domains (null = all)."
+        default=None,
+        description=(
+            "Explicit list of allowed knowledge domains. Null means all domains "
+            "are available."
+        ),
+        json_schema_extra={"weight": 7},
     )
     knowledge_blacklist: Optional[List[str]] = Field(
-        default=None, description="Forbidden knowledge domains."
+        default=None,
+        description="Explicit list of forbidden knowledge domains.",
+        json_schema_extra={"weight": 7},
     )
     tool_whitelist: Optional[List[str]] = Field(
-        default=None, description="Allowed tools (null = all)."
+        default=None,
+        description=(
+            "Explicit list of allowed tool names. Null means all tools are available."
+        ),
+        json_schema_extra={"weight": 7},
     )
     tool_blacklist: Optional[List[str]] = Field(
-        default=None, description="Forbidden tools."
+        default=None,
+        description="Explicit list of forbidden tool names.",
+        json_schema_extra={"weight": 7},
     )
 
     _agent_id: str = PrivateAttr("")
@@ -217,6 +411,35 @@ class Identity(BaseModel):
             The implicit blacklist entries enforced by the system.
         """
         return list(IDENTITY_IMPLICIT_TUNING_BLACKLIST)
+
+    def get_tunable_schema(self) -> dict:
+        """
+        Returns the JSON schema masked by the tuning policy.
+
+        Returns:
+            The masked JSON schema the subconscious is allowed to use.
+        """
+        raw_schema = self.model_json_schema()
+        inlined_schema = _inline_schema_refs(raw_schema)
+        masked_schema = _mask_schema(
+            inlined_schema,
+            self.tuning_policy,
+            self.implicit_tuning_blacklist,
+        )
+        masked_schema.pop("$defs", None)
+        return masked_schema
+
+    def get_masked_identity(self) -> dict:
+        """
+        Returns a masked identity payload based on tuning policy rules.
+
+        Returns:
+            The masked identity payload.
+        """
+        payload = self.model_dump(mode="json")
+        return _mask_payload(
+            payload, self.tuning_policy, self.implicit_tuning_blacklist
+        )
 
     def set_agent_id(self, agent_id: str) -> None:
         """

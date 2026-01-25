@@ -62,6 +62,14 @@ class FileWriteTool(BaseTool):
                 f"Error: file_path is outside allowed root {root}."
             ) from exc
 
+        restricted_root = root / ".chaos" / "identities"
+        try:
+            candidate.relative_to(restricted_root)
+            raise ValueError("Error: file_path targets a restricted identity file.")
+        except ValueError as exc:
+            if "restricted identity" in str(exc):
+                raise
+
         return candidate
 
     def _error(self, code: str, message: str) -> str:

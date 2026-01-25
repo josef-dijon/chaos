@@ -108,3 +108,38 @@ def test_resolve_tool_whitelist_allows_all_when_empty():
     identity.tool_whitelist = None
 
     assert identity.resolve_tool_whitelist() is None
+
+
+def test_get_tunable_schema_masks_blacklisted_fields() -> None:
+    """Masks schema fields not allowed by tuning policy."""
+    identity = Identity.create_default("tester")
+
+    schema = identity.get_tunable_schema()
+
+    assert "schema_version" not in schema.get("properties", {})
+    instructions = schema["properties"]["instructions"]
+    assert "operational_notes" in instructions["properties"]
+    assert "system_prompts" not in instructions["properties"]
+
+
+def test_get_tunable_schema_exposes_weights() -> None:
+    """Includes field weights in the tunable schema."""
+    identity = Identity.create_default("tester")
+
+    schema = identity.get_tunable_schema()
+    operational_notes = schema["properties"]["instructions"]["properties"][
+        "operational_notes"
+    ]
+
+    assert operational_notes["weight"] == 2
+
+
+def test_get_masked_identity_hides_blacklisted_fields() -> None:
+    """Removes blacklisted identity fields from the masked payload."""
+    identity = Identity.create_default("tester")
+
+    masked = identity.get_masked_identity()
+
+    assert "schema_version" not in masked
+    assert "tuning_policy" not in masked
+    assert "loop_definition" not in masked

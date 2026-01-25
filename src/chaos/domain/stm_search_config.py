@@ -16,15 +16,41 @@ class StmSearchConfig(BaseModel):
         weights: Weight tuning for ranking.
     """
 
-    engine: str = Field(default="rapidfuzz", description="Search engine identifier.")
-    algorithm: str = Field(default="token_set_ratio", description="Search algorithm.")
-    threshold: float = Field(default=60, description="Search similarity threshold.")
-    top_k: int = Field(default=8, description="Maximum results to return.")
+    engine: str = Field(
+        default="rapidfuzz",
+        description="Search engine identifier used for STM retrieval.",
+        json_schema_extra={"weight": 6},
+    )
+    algorithm: str = Field(
+        default="token_set_ratio",
+        description="Search algorithm name used by the STM search engine.",
+        json_schema_extra={"weight": 6},
+    )
+    threshold: float = Field(
+        default=60,
+        description=(
+            "Similarity threshold for STM matches (0-100). Higher values narrow "
+            "results."
+        ),
+        json_schema_extra={"weight": 7},
+    )
+    top_k: int = Field(
+        default=8,
+        description="Maximum number of STM results returned per query.",
+        json_schema_extra={"weight": 6},
+    )
     recency_half_life_seconds: int = Field(
-        default=86400, description="Half-life for recency decay weighting."
+        default=86400,
+        description=(
+            "Half-life in seconds for recency decay weighting. Lower values "
+            "favor newer memories."
+        ),
+        json_schema_extra={"weight": 7},
     )
     weights: SearchWeights = Field(
-        default_factory=SearchWeights, description="Weight tuning for ranking."
+        default_factory=SearchWeights,
+        description="Weight tuning for STM ranking components.",
+        json_schema_extra={"weight": 7},
     )
 
     model_config = ConfigDict(extra="forbid")
