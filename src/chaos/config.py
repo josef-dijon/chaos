@@ -2,15 +2,16 @@ import json
 from pathlib import Path
 from typing import Optional
 
-from pydantic import BaseModel, Field, ConfigDict, model_validator
+from pydantic import BaseModel, Field, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DEFAULT_CHAOS_DIR = Path(".chaos")
 DEFAULT_CONFIG_PATH = DEFAULT_CHAOS_DIR / "config.json"
 
 
-class Config(BaseModel):
+class Config(BaseSettings):
     """
-    Application configuration loaded from a JSON file.
+    Application configuration loaded from environment variables, .env, and JSON.
     """
 
     openai_api_key: Optional[str] = Field(
@@ -33,7 +34,9 @@ class Config(BaseModel):
         default=None, description="Root directory for file tool access."
     )
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="forbid"
+    )
 
     @staticmethod
     def _resolve_relative_path(path: Path, chaos_dir: Path) -> Path:
