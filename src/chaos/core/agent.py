@@ -16,7 +16,7 @@ from chaos.engine.basic_agent import BasicAgent
 
 class Agent:
     """
-    The main Agent of CHAOS, orchestrating the Actor and Subconscious.
+    The main Chaos agent, orchestrating the Actor and Subconscious.
     """
 
     def __init__(self, identity_path: Path, config: Config | None = None):

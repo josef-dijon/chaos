@@ -4,7 +4,7 @@
 
 ## **1. Executive Summary**
 
-CHAOS is a framework for building self-improving, persistent digital entities. It utilizes a dual-process theory of mind: every **Agent of CHAOS** consists of an **Actor** (the active, task-oriented consciousness) and a **Subconscious** (the background process responsible for reflection, maintenance, and growth). This structure ensures that agents do not just perform tasks, but adapt based on their experiences and direct "Architect" feedback.
+CHAOS is a framework for building self-improving, persistent digital entities. It utilizes a dual-process theory of mind: every **Chaos agent** consists of an **Actor** (the active, task-oriented consciousness) and a **Subconscious** (the background process responsible for reflection, maintenance, and growth). This structure ensures that agents do not just perform tasks, but adapt based on their experiences and direct "Architect" feedback.
 
 ## **2. Core Class Hierarchy**
 
@@ -478,7 +478,7 @@ Dream tasks (conceptual):
 
 The initial implementation will be a Python CLI for rapid iteration on the memory and learning logic.
 
-* The Architect interacts with a single "Agent of CHAOS" (e.g., a "Coder").  
+* The Architect interacts with a single "Chaos agent" (e.g., a "Coder").  
 * The do command is standard input.  
 * The learn and dream commands are manual triggers (e.g., /learn [feedback]).  
 * Output is color-coded to simulate the "Mirror Persona" (Actor = Green, Subconscious = Blue).
