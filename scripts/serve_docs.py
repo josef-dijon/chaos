@@ -13,7 +13,8 @@ from urllib.parse import unquote, urlparse
 
 import markdown
 
-DOCS_ROOT: Final[Path] = Path(__file__).resolve().parent
+PROJECT_ROOT: Final[Path] = Path(__file__).resolve().parents[1]
+DOCS_ROOT: Final[Path] = PROJECT_ROOT / "docs"
 MARKDOWN_EXTENSIONS: Final[list[str]] = ["fenced_code", "tables", "toc"]
 
 

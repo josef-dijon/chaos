@@ -4,16 +4,14 @@
 Planning artifacts used to structure and track work across features and migrations.
 
 ## In Progress
-- [Architecture Docs Migration Plan](architecture-docs-migration-plan.md)
-- [Architecture Docs Migration Checklist](architecture-docs-migration-checklist.md)
-- [Architecture Docs Restructure Plan](architecture-docs-restructure-plan.md)
-- [Architecture Docs Restructure Checklist](architecture-docs-restructure-checklist.md)
 - [Block Interface Plan](block-interface-plan.md)
 - [Block Interface Checklist](block-interface-checklist.md)
 - [Tuning Policy Plan](tuning-policy-plan.md)
 - [Tuning Policy Checklist](tuning-policy-checklist.md)
 
 ## Complete
+- [Architecture Docs Migration Plan](architecture-docs-migration-plan-complete.md)
+- [Architecture Docs Restructure Plan](architecture-docs-restructure-plan-complete.md)
 - [Docs Server Plan](docs-server-plan-complete.md)
 - [Architecture Alignment Plan](architecture-alignment-plan-complete.md)
 - [Code Review Remediation Plan](code-review-remediation-plan-complete.md)
