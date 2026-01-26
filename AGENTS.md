@@ -4,11 +4,16 @@ This document outlines our development standards, workflows, and architecture ch
 
 ## Architecture & Source of Truth
 
-The [Architecture Specification](docs/architecture.md) is the **single source of truth** for this project.
+The [Architecture Index](docs/architecture/index.md) is the **single source of truth** for this project.
 
 - **Direction of Flow:** Information flows strictly from the Architecture Specification to the Codebase.
 - **Updates:** Any architectural changes must first be defined and documented in the specification before implementation begins.
-- **Compliance:** All code implementation must strictly adhere to the patterns and structures defined in the architecture document.
+- **Compliance:** All code implementation must strictly adhere to the patterns and structures defined in the architecture documents.
+
+## Documentation Standard
+
+All documentation must follow the project documentation standard:
+- [Documentation Standard](docs/documentation-standard.md)
 
 ## Project Structure & Tooling
 
@@ -33,6 +38,7 @@ The [Architecture Specification](docs/architecture.md) is the **single source of
         - Create a planning document in `docs/planning/` with a `-plan.md` suffix.
         - Create a companion checklist file in `docs/planning/` with a `-checklist.md` suffix.
     - **Tracking:** Mark checklist items as done as the plan is executed.
+    - **Index Updates:** Keep `docs/planning/index.md` updated with an In Progress section and a Complete section. Checklists may live in In Progress but must be deleted when the plan moves to Complete.
     - **Completion:** Once a plan is completed, tested, and committed, rename the planning document to suffix it with `-complete.md` and delete the accompanying checklist file.
 
 ## Coding Standards

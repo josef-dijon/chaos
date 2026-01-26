@@ -72,7 +72,7 @@ flowchart TB
     Identity -.->|Updates Behavior| Actor
 ```
 
-Detailed technical specifications can be found in [docs/architecture.md](docs/architecture.md).
+Detailed technical specifications can be found in the documentation index at [docs/README.md](docs/README.md).
 
 ## Getting Started
 
@@ -101,7 +101,7 @@ uv sync
 
 ## Development Standards
 
-We follow strict development protocols to ensure high coverage and architectural integrity. See [AGENTS.md](AGENTS.md) for our contributor guide and workflow.
+We follow strict development protocols to ensure high coverage and architectural integrity. See [AGENTS.md](AGENTS.md) for our contributor guide and workflow. All documentation and planning artifacts must follow the [Documentation Standard](docs/documentation-standard.md).
 
 ## Testing
 
