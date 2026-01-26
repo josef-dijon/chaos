@@ -38,6 +38,30 @@ The Identity is a persistent, schema-validated JSON file representing the immuta
 ### Identity Memory Configuration (Schema Contract)
 Identity must store memory behavior configuration (window sizes, heuristics, collection names). Connection details (DB URLs, credentials) are application configuration, not identity.
 
+### Masked Schema and Masked Identity
+The subconscious must only see a masked view of the identity and its schema. Masking uses the tuning policy (plus an implicit blacklist) to remove forbidden paths.
+
+- Masked identity is produced by `Identity.get_masked_identity()`.
+- Masked schema is produced by `Identity.get_tunable_schema()`.
+- Blacklisted fields are removed entirely from masked views.
+- Parent-path allow rules expose all descendants unless blocked.
+
+### Weighting System
+Each schema field includes a weight (1-10) that guides how conservative the subconscious should be.
+
+| Weight | Meaning | Guidance |
+| --- | --- | --- |
+| 10 | Critical | Never tune; core safety or integrity. |
+| 7-9 | High | Rare, deliberate changes only. |
+| 4-6 | Moderate | Tuning allowed with care. |
+| 1-3 | Mutable | Intended for frequent adaptation. |
+
+### Tuning Policy Rules
+- Paths use dot-separated keys (e.g., `profile.name`).
+- Parent paths cover all children.
+- Blacklist entries always override whitelist entries.
+- Implicit blacklist includes: `schema_version`, `tuning_policy`, `memory.subconscious`, `memory.actor`, `loop_definition`.
+
 Minimal identity example (conceptual):
 
 ```json

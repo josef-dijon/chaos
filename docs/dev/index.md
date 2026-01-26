@@ -4,7 +4,7 @@
 Guidance for working in this repository, including workflows, tooling, and standards.
 
 ## Index
-- No developer documents have been created in this section yet.
+- [Ideations](ideations.md): Scratchpad and exploratory notes.
 
 ## Roadmap
 - None yet.

@@ -10,6 +10,8 @@ Planning artifacts used to structure and track work across features and migratio
 - [Architecture Docs Restructure Checklist](architecture-docs-restructure-checklist.md)
 - [Block Interface Plan](block-interface-plan.md)
 - [Block Interface Checklist](block-interface-checklist.md)
+- [Tuning Policy Plan](tuning-policy-plan.md)
+- [Tuning Policy Checklist](tuning-policy-checklist.md)
 
 ## Complete
 - [Docs Server Plan](docs-server-plan-complete.md)
