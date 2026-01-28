@@ -4,8 +4,18 @@
 Planning artifacts used to structure and track work across features and migrations.
 
 ## In Progress
-- [Block Interface Plan](block-interface-plan.md)
-- [Block Interface Checklist](block-interface-checklist.md)
+- [Block Plan](block-plan.md)
+- [Block Checklist](block-checklist.md)
+- [Block Architecture Docs Expansion Plan](block-architecture-docs-expansion-plan.md)
+- [Block Architecture Docs Expansion Checklist](block-architecture-docs-expansion-checklist.md)
+- [Block Runtime Implementation Plan](block-runtime-implementation-plan.md)
+- [Block Runtime Implementation Checklist](block-runtime-implementation-checklist.md)
+- [LLM Primitive LiteLLM Integration Plan](llm-primitive-litellm-plan.md)
+- [LLM Primitive LiteLLM Integration Checklist](llm-primitive-litellm-checklist.md)
+- [LLM Primitive Functional Harness Plan](llm-primitive-functional-harness-plan.md)
+- [LLM Primitive Functional Harness Checklist](llm-primitive-functional-harness-checklist.md)
+- [LLM Primitive + Response Unification Plan](llm-primitive-response-unification-plan.md)
+- [LLM Primitive + Response Unification Checklist](llm-primitive-response-unification-checklist.md)
 - [Tuning Policy Plan](tuning-policy-plan.md)
 - [Tuning Policy Checklist](tuning-policy-checklist.md)
 
