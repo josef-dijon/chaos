@@ -4,16 +4,22 @@
 Foundational primitives and block-based architecture imported from the core architecture specification.
 
 ## Index
-- [Recursive Block Overview](recursive-block-overview.md): Fractal design and container-as-manager concept.
-- [Block Interface](block-interface.md): `IBlock` definition and contract.
+- [Recursive Block Overview](recursive-block-overview.md): Fractal design and recursive block model.
+- [Block Glossary](block-glossary.md): Shared vocabulary for block execution, recovery, and ledger semantics.
+- [Block Architecture](block-interface.md): What a block is and how it executes (leaf + composite).
+- [Block Request and Metadata](block-request-metadata.md): Canonical request envelope and reserved metadata keys.
+- [Block Execution Semantics](block-execution-semantics.md): Deterministic composite graph execution and transition rules.
 - [Block Responses](block-responses.md): Polymorphic response semantics.
-- [Container Manager Orchestration](container-manager-orchestration.md): Hub-and-spoke execution flow.
 - [Recovery Policy System](recovery-policy-system.md): Recovery policies and escalation chain.
-- [Ledger Checkpoints and Rollback](ledger-checkpoints-and-rollback.md): Transactional ledger behavior.
-- [Recursive Block Scenarios](recursive-block-scenarios.md): Example flows and failure handling.
+- [Block Recovery Semantics](block-recovery-semantics.md): Deterministic application of recovery policies.
+- [Block Tool and Side-Effect Safety](block-tool-safety.md): Retry/rollback rules for side effects.
+- [Block Observability](block-observability.md): Trace/span model and event vocabulary.
+- [Block Testing Guidelines](block-testing-guidelines.md): Deterministic unit testing patterns.
+- [Block Architecture Open Questions](block-open-questions.md): Unresolved decisions that must be specified before runtime behavior is normative.
 - [LLM Primitive](02-llm-primitive.md): The atomic unit of LLM interaction and validation.
-- [State Ledger](03-state-ledger.md): Context, provenance, and transactional ledger design.
-- [Core Architecture Overview](core-architecture.md): Legacy overview from core architecture.
+- [State Ledger](03-state-ledger.md): Context, provenance, and checkpoint/rollback design.
+- [Recursive Block Scenarios](recursive-block-scenarios.md): Example flows and failure handling.
+- [Core Architecture Overview (Legacy)](core-architecture.md): Historical context; not normative.
 - [Archive](../../archive/index.md): Historical notes and artifacts.
 
 ## Roadmap

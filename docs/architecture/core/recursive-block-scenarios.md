@@ -11,11 +11,15 @@ Scenario narratives and high-level flow diagrams.
 
 ## Contents
 
+### Terminology
+This document uses standardized terms defined in:
+- [Block Glossary](block-glossary.md)
+
 ### Scenario A: The Happy Path
-User asks for weather; the manager orchestrates a single tool-backed block.
+User asks for weather; a composite block orchestrates a single tool-backed block.
 
 ```text
-[User] -> (Request) -> [RootContainer (Manager)]
+[User] -> (Request) -> [RootBlock (Composite)]
                            |
                            +-> (1. Prepare) -> [WeatherBlock (Atomic)]
                            |                        |
@@ -27,18 +31,18 @@ User asks for weather; the manager orchestrates a single tool-backed block.
 ```
 
 ### Scenario B: The Correction Loop (Internal Handling)
-Weather tool fails because city name is typo'd. Manager repairs input and retries.
+Weather tool fails because city name is typo'd. The calling block repairs input and retries.
 
 ```text
-[RootContainer (Manager)]
+[RootBlock (Composite)]
     |
     +-> (1. Execute) -> [WeatherBlock] (Input: "Lndn")
     |                       |
-    |                       +-> Returns FAILURE (Reason: "City not found")
+    |                       +-> Returns FAILURE (error_type: CityNotFoundError, reason: "city_not_found")
     |
-    +-> (2. Catch) -> Manager checks Policy("CityNotFound") -> Strategy: LLM_PATCH
+    +-> (2. Catch) -> RootBlock checks recovery policy for the failure
     |
-    +-> (3. Patch) -> Manager calls Helper LLM ("Fix 'Lndn' for weather")
+    +-> (3. Patch) -> RootBlock executes a helper block to repair input ("Fix 'Lndn' for weather")
     |                 Helper returns "London"
     |
     +-> (4. Retry) -> [WeatherBlock] (Input: "London")
@@ -49,20 +53,21 @@ Weather tool fails because city name is typo'd. Manager repairs input and retrie
 ```
 
 ### Scenario C: The Bubble Up
-Weather tool fails because API key is missing. Manager cannot fix this and bubbles.
+Weather tool fails because API key is missing. The calling block cannot fix this and bubbles.
 
 ```text
-[RootContainer (Manager)]
+[RootBlock (Composite)]
     |
     +-> (1. Execute) -> [WeatherBlock]
     |                       |
-    |                       +-> Returns FAILURE (Reason: "Auth Missing")
+    |                       +-> Returns FAILURE (error_type: AuthError, reason: "auth_missing")
     |
-    +-> (2. Catch) -> Manager checks Policy("AuthError") -> Strategy: BUBBLE
+    +-> (2. Catch) -> RootBlock checks recovery policy for the failure -> Strategy: Bubble
     |
-    +-> (3. Abort) -> Manager returns FAILURE (Reason: "Auth Missing")
+    +-> (3. Abort) -> RootBlock returns FAILURE (error_type: AuthError, reason: "auth_missing")
 ```
 
 ## References
 - [Core Architecture Index](index.md)
+- [Block Glossary](block-glossary.md)
 - [Architecture Index](../index.md)
