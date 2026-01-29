@@ -16,6 +16,10 @@ def test_config_load_defaults(tmp_path: Path) -> None:
     assert config.get_chaos_dir() == Path(".chaos")
     assert config.get_chroma_db_path() == Path(".chaos") / "db" / "chroma"
     assert config.get_raw_db_path() == Path(".chaos") / "db" / "raw.sqlite"
+    assert config.get_block_stats_path() == (Path(".chaos") / "db" / "block_stats.json")
+    assert config.use_litellm_proxy() is True
+    assert config.get_litellm_proxy_url() is None
+    assert config.get_litellm_proxy_api_key() is None
 
 
 def test_config_load_from_file(tmp_path: Path) -> None:
@@ -27,8 +31,12 @@ def test_config_load_from_file(tmp_path: Path) -> None:
           "env": "test",
           "model_name": "gpt-4o-mini",
           "openai_api_key": "test-key",
+          "litellm_use_proxy": false,
+          "litellm_proxy_url": "https://proxy.local",
+          "litellm_proxy_api_key": "proxy-key",
           "chroma_db_path": ".chaos/db/chroma",
-          "raw_db_path": ".chaos/db/raw.sqlite"
+          "raw_db_path": ".chaos/db/raw.sqlite",
+          "block_stats_path": ".chaos/db/block_stats.json"
         }
         """,
         encoding="utf-8",
@@ -38,8 +46,12 @@ def test_config_load_from_file(tmp_path: Path) -> None:
 
     assert config.get_model_name() == "gpt-4o-mini"
     assert config.get_openai_api_key() == "test-key"
+    assert config.use_litellm_proxy() is False
+    assert config.get_litellm_proxy_url() == "https://proxy.local"
+    assert config.get_litellm_proxy_api_key() == "proxy-key"
     assert config.get_chroma_db_path() == Path(".chaos") / "db" / "chroma"
     assert config.get_raw_db_path() == Path(".chaos") / "db" / "raw.sqlite"
+    assert config.get_block_stats_path() == (Path(".chaos") / "db" / "block_stats.json")
 
 
 def test_config_provider_loads_custom_path(tmp_path: Path) -> None:
@@ -69,7 +81,8 @@ def test_config_resolves_relative_paths(tmp_path: Path) -> None:
         """
         {
           "chroma_db_path": "db/custom",
-          "raw_db_path": "db/raw.sqlite"
+          "raw_db_path": "db/raw.sqlite",
+          "block_stats_path": "db/block_stats.json"
         }
         """,
         encoding="utf-8",
@@ -79,6 +92,7 @@ def test_config_resolves_relative_paths(tmp_path: Path) -> None:
 
     assert config.get_chroma_db_path() == Path(".chaos") / "db" / "custom"
     assert config.get_raw_db_path() == Path(".chaos") / "db" / "raw.sqlite"
+    assert config.get_block_stats_path() == (Path(".chaos") / "db" / "block_stats.json")
 
 
 def test_config_rejects_unknown_fields(tmp_path: Path) -> None:

@@ -20,6 +20,15 @@ class Config(BaseSettings):
     model_name: str = Field(
         default="gpt-4o", description="Default model name for the agent runtime."
     )
+    litellm_use_proxy: bool = Field(
+        default=True, description="Route LLM traffic through the LiteLLM proxy."
+    )
+    litellm_proxy_url: Optional[str] = Field(
+        default=None, description="LiteLLM proxy base URL."
+    )
+    litellm_proxy_api_key: Optional[str] = Field(
+        default=None, description="LiteLLM proxy API key."
+    )
     env: str = Field(default="dev", description="Execution environment name.")
     chaos_dir: Path = Field(
         default=DEFAULT_CHAOS_DIR, description="Root directory for CHAOS artifacts."
@@ -29,6 +38,9 @@ class Config(BaseSettings):
     )
     raw_db_path: Optional[Path] = Field(
         default=None, description="Path to the raw SQLite event store."
+    )
+    block_stats_path: Optional[Path] = Field(
+        default=None, description="Path to the block stats JSON store."
     )
     tool_root: Optional[Path] = Field(
         default=None, description="Root directory for file tool access."
@@ -80,6 +92,12 @@ class Config(BaseSettings):
             self.raw_db_path = self._resolve_relative_path(
                 self.raw_db_path, self.chaos_dir
             )
+        if self.block_stats_path is None:
+            self.block_stats_path = base_db_dir / "block_stats.json"
+        else:
+            self.block_stats_path = self._resolve_relative_path(
+                self.block_stats_path, self.chaos_dir
+            )
         if self.tool_root is None:
             self.tool_root = Path.cwd().resolve()
         return self
@@ -112,6 +130,21 @@ class Config(BaseSettings):
         """
         return self.openai_api_key
 
+    def use_litellm_proxy(self) -> bool:
+        """Returns whether LiteLLM proxy usage is enabled."""
+
+        return self.litellm_use_proxy
+
+    def get_litellm_proxy_url(self) -> Optional[str]:
+        """Returns the configured LiteLLM proxy base URL."""
+
+        return self.litellm_proxy_url
+
+    def get_litellm_proxy_api_key(self) -> Optional[str]:
+        """Returns the configured LiteLLM proxy API key."""
+
+        return self.litellm_proxy_api_key
+
     def get_model_name(self) -> str:
         """
         Returns the configured model name.
@@ -142,6 +175,17 @@ class Config(BaseSettings):
         if self.raw_db_path is None:
             raise ValueError("Raw database path is not configured.")
         return self.raw_db_path
+
+    def get_block_stats_path(self) -> Path:
+        """Returns the path to the block stats JSON store.
+
+        Returns:
+            A path to the block stats JSON file.
+        """
+
+        if self.block_stats_path is None:
+            raise ValueError("Block stats path is not configured.")
+        return self.block_stats_path
 
     def get_tool_root(self) -> Path:
         """

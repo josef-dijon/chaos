@@ -1,12 +1,17 @@
 from abc import ABC, abstractmethod
+from time import perf_counter
 from typing import Any, Dict, List, Optional, Type
 from uuid import uuid4
 
+from chaos.domain.block_estimate import BlockEstimate
 from chaos.domain.messages import Request, Response
 from chaos.domain.policy import BubblePolicy, RecoveryPolicy, RecoveryType, RetryPolicy
 from chaos.domain.state import BlockState
 from chaos.engine.conditions import ConditionRegistry
 from chaos.engine.policy_handlers import PolicyHandler
+from chaos.stats.block_attempt_record import BlockAttemptRecord
+from chaos.stats.block_stats_identity import BlockStatsIdentity
+from chaos.stats.store_registry import get_default_store
 
 
 class Block(ABC):
@@ -80,6 +85,12 @@ class Block(ABC):
         return self._name
 
     @property
+    def block_type(self) -> str:
+        """Stable type identifier for this block."""
+
+        return self.__class__.__name__
+
+    @property
     def state(self) -> BlockState:
         """Current execution state."""
         return self._state
@@ -105,14 +116,16 @@ class Block(ABC):
         If it has no nodes, it calls _execute_primitive() for atomic work.
         """
         self._state = BlockState.BUSY
+        start_time = perf_counter()
+        response: Optional[Response] = None
+        request_for_execution = self._with_base_metadata(request)
         try:
-            request_for_execution = self._with_base_metadata(request)
             if self._nodes is not None:
-                return self._execute_graph(request_for_execution)
-            return self._execute_primitive(request_for_execution)
-
+                response = self._execute_graph(request_for_execution)
+            else:
+                response = self._execute_primitive(request_for_execution)
         except Exception as e:
-            return Response(
+            response = Response(
                 success=False,
                 reason="internal_error",
                 details={"error": str(e)},
@@ -120,11 +133,41 @@ class Block(ABC):
             )
         finally:
             self._state = BlockState.READY
+            duration_ms = (perf_counter() - start_time) * 1000
+            if response is not None:
+                response.metadata["duration_ms"] = duration_ms
+                self._record_attempt(
+                    request=request_for_execution,
+                    response=response,
+                    duration_ms=duration_ms,
+                )
+
+        if response is None:
+            return Response(
+                success=False,
+                reason="internal_error",
+                details={"error": "No response returned"},
+                error_type=Exception,
+            )
+        return response
 
     def _execute_primitive(self, request: Request) -> Response:
         """Execute atomic work. Override this for primitive blocks."""
         # Default implementation for "empty" blocks
         return Response(success=True, data=None)
+
+    def estimate_execution(self, request: Request) -> BlockEstimate:
+        """Return a side-effect-free estimate for this block.
+
+        Args:
+            request: Request to estimate.
+
+        Returns:
+            BlockEstimate for the given request.
+        """
+
+        identity = self.stats_identity()
+        return get_default_store().estimate(identity, request)
 
     def _execute_graph(self, request: Request) -> Response:
         """Execute the graph of child nodes."""
@@ -379,6 +422,64 @@ class Block(ABC):
             )
 
         return None
+
+    def stats_identity(self) -> BlockStatsIdentity:
+        """Return the stable stats identity for this block."""
+
+        return BlockStatsIdentity(
+            block_name=self.name, block_type=self.block_type, version=None
+        )
+
+    def _build_attempt_record(
+        self, request: Request, response: Response, duration_ms: float
+    ) -> BlockAttemptRecord:
+        """Build a stats record for a block execution attempt.
+
+        Args:
+            request: Request executed by the block.
+            response: Response produced by the block.
+            duration_ms: Execution duration in milliseconds.
+
+        Returns:
+            BlockAttemptRecord to record.
+        """
+
+        metadata = request.metadata
+        identity = self.stats_identity()
+        error_type = response.error_type
+        error_type_name = error_type.__name__ if error_type else None
+        return BlockAttemptRecord(
+            trace_id=str(metadata.get("trace_id", "")),
+            run_id=str(metadata.get("run_id", "")),
+            span_id=str(metadata.get("span_id", "")),
+            parent_span_id=metadata.get("parent_span_id"),
+            block_name=identity.block_name,
+            block_type=identity.block_type,
+            version=identity.version,
+            node_name=metadata.get("node_name"),
+            attempt=int(metadata.get("attempt", 1)),
+            success=response.success(),
+            reason=response.reason,
+            error_type=error_type_name,
+            duration_ms=duration_ms,
+        )
+
+    def _record_attempt(
+        self, request: Request, response: Response, duration_ms: float
+    ) -> None:
+        """Record a block execution attempt in the stats store.
+
+        Args:
+            request: Request executed by the block.
+            response: Response produced by the block.
+            duration_ms: Execution duration in milliseconds.
+        """
+
+        record = self._build_attempt_record(request, response, duration_ms)
+        try:
+            get_default_store().record_attempt(record)
+        except Exception:
+            return
 
     def _with_base_metadata(self, request: Request) -> Request:
         """Return a request copy with minimal base metadata populated.
