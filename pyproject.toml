@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "chromadb>=1.4.1",
+    "instructor>=1.7.0",
     "langchain-openai>=1.1.7",
     "langgraph>=1.0.7",
     "litellm>=1.52.0",
@@ -14,6 +15,7 @@ dependencies = [
     "pydantic-settings>=2.12.0",
     "python-dotenv>=1.2.1",
     "rich>=14.2.0",
+    "tenacity>=9.0.0",
     "typer>=0.21.1",
 ]
 

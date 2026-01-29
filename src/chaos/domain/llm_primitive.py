@@ -1,10 +1,11 @@
 from typing import Any, Dict, List, Optional, Type
+from uuid import uuid4
 
-from litellm import completion
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
 from chaos.config import Config
 from chaos.domain.block import Block
+from chaos.domain.block_estimate import BlockEstimate
 from chaos.domain.exceptions import (
     ApiKeyError,
     ContextLengthError,
@@ -19,6 +20,15 @@ from chaos.domain.policy import (
     RepairPolicy,
     RetryPolicy,
 )
+from chaos.llm.litellm_stats_adapter import LiteLLMStatsAdapter
+from chaos.llm.llm_request import LLMRequest
+from chaos.llm.llm_response import LLMResponse
+from chaos.llm.llm_service import LLMService
+from chaos.llm.model_selector import ModelSelector
+from chaos.llm.response_status import ResponseStatus
+from chaos.stats.block_attempt_record import BlockAttemptRecord
+from chaos.stats.block_stats_identity import BlockStatsIdentity
+from chaos.stats.store_registry import get_default_store
 
 
 class LLMPrimitive(Block):
@@ -32,6 +42,11 @@ class LLMPrimitive(Block):
         model: Optional[str] = None,
         temperature: float = 0.0,
         config: Optional[Config] = None,
+        stats_adapter: Optional[LiteLLMStatsAdapter] = None,
+        llm_service: Optional[LLMService] = None,
+        model_selector: Optional[ModelSelector] = None,
+        use_instructor: bool = True,
+        max_repair_attempts: int = 2,
     ):
         """Initialize the LLM primitive.
 
@@ -42,6 +57,11 @@ class LLMPrimitive(Block):
             model: Optional model override. Defaults to Config model_name.
             temperature: Sampling temperature for the model.
             config: Optional Config instance for provider settings.
+            stats_adapter: Optional stats adapter for LLM estimation.
+            llm_service: Optional LLM service override.
+            model_selector: Optional model selector override.
+            use_instructor: Whether to use instructor for schema enforcement.
+            max_repair_attempts: Number of semantic repair attempts.
         """
         self._config = config or Config.load()
         resolved_model = model or self._config.get_model_name()
@@ -50,6 +70,10 @@ class LLMPrimitive(Block):
         self._output_data_model = output_data_model
         self._model = resolved_model
         self._temperature = temperature
+        self._stats_adapter = stats_adapter or LiteLLMStatsAdapter(get_default_store())
+        self._llm_service = llm_service or LLMService(use_instructor=use_instructor)
+        self._model_selector = model_selector or ModelSelector()
+        self._max_repair_attempts = max(0, max_repair_attempts)
 
     def build(self) -> None:
         """Atomic blocks do not have a graph."""
@@ -59,12 +83,76 @@ class LLMPrimitive(Block):
         """Execute the LLM call with the given request payload."""
         try:
             prompt = self._coerce_payload(request.payload)
-            messages = self._build_messages(prompt)
-            content = self._invoke_llm(messages)
-            data = self._validate_output(content)
-            return Response(success=True, data=data)
-        except Exception as exc:
-            return self._handle_error(exc)
+        except ValueError as exc:
+            return self._failure_response("invalid_payload", exc, SchemaError)
+
+        messages = self._build_messages(prompt)
+        model = self._model_selector.select_model(request, self._model)
+        manager_id = self._build_manager_id()
+        api_base, api_key = self._resolve_api_settings()
+
+        max_attempts = 1 + self._max_repair_attempts
+        attempt = 1
+        while attempt <= max_attempts:
+            llm_request = self._build_llm_request(
+                request=request,
+                messages=messages,
+                model=model,
+                manager_id=manager_id,
+                attempt=attempt,
+                api_base=api_base,
+                api_key=api_key,
+            )
+            llm_response = self._llm_service.execute(llm_request)
+            if llm_response.status == ResponseStatus.SUCCESS:
+                return Response(success=True, data=llm_response.data)
+            if (
+                llm_response.status == ResponseStatus.SEMANTIC_ERROR
+                and attempt < max_attempts
+            ):
+                messages = self._append_validation_feedback(
+                    messages, llm_response.error_details
+                )
+                attempt += 1
+                continue
+            return self._map_llm_failure(llm_response)
+
+        return Response(
+            success=False,
+            reason="llm_execution_failed",
+            details={"error": "LLM execution failed"},
+            error_type=Exception,
+        )
+
+    @property
+    def block_type(self) -> str:
+        """Return the stable block type identifier."""
+
+        return "llm_primitive"
+
+    def stats_identity(self) -> BlockStatsIdentity:
+        """Return the stable stats identity for this block."""
+
+        return BlockStatsIdentity(
+            block_name=self.name, block_type=self.block_type, version=None
+        )
+
+    def estimate_execution(self, request: Request) -> BlockEstimate:
+        """Return a side-effect-free estimate for this block."""
+
+        identity = self.stats_identity()
+        prior = self._build_prior_estimate(identity, request)
+        return self._stats_adapter.estimate(identity, request, prior)
+
+    def _build_attempt_record(
+        self, request: Request, response: Response, duration_ms: float
+    ) -> "BlockAttemptRecord":
+        """Build a stats record for an LLM execution attempt."""
+
+        record = super()._build_attempt_record(request, response, duration_ms)
+        return record.model_copy(
+            update={"llm_calls": 1, "model": self._model, "block_executions": 1}
+        )
 
     def _coerce_payload(self, payload: Any) -> str:
         """Normalize the request payload into a prompt string.
@@ -84,6 +172,83 @@ class LLMPrimitive(Block):
                     return value
         raise ValueError("LLMPrimitive payload must be a string or prompt dict.")
 
+    def _build_llm_request(
+        self,
+        request: Request,
+        messages: List[Dict[str, str]],
+        model: str,
+        manager_id: str,
+        attempt: int,
+        api_base: Optional[str],
+        api_key: Optional[str],
+    ) -> LLMRequest:
+        """Build the internal LLM request payload.
+
+        Args:
+            request: Block request driving the LLM call.
+            messages: Message list for the LLM call.
+            model: Selected model identifier.
+            manager_id: Unique manager identifier for auditing.
+            attempt: Internal attempt number for the LLM call.
+            api_base: Optional API base for proxy routing.
+            api_key: Optional API key for provider access.
+
+        Returns:
+            An LLMRequest instance.
+        """
+
+        metadata = dict(request.metadata)
+        metadata["manager_id"] = manager_id
+        metadata.setdefault("block_name", self.name)
+        metadata["block_attempt"] = int(request.metadata.get("attempt", 1))
+        metadata["llm_attempt"] = attempt
+        return LLMRequest(
+            messages=messages,
+            output_data_model=self._output_data_model,
+            model=model,
+            temperature=self._temperature,
+            manager_id=manager_id,
+            attempt=attempt,
+            metadata=metadata,
+            api_base=api_base,
+            api_key=api_key,
+        )
+
+    def _build_prior_estimate(
+        self, identity: BlockStatsIdentity, request: Request
+    ) -> BlockEstimate:
+        """Build a cold-start estimate for LLM execution.
+
+        Args:
+            identity: Stable block identity metadata.
+            request: Request to estimate.
+
+        Returns:
+            A BlockEstimate built from conservative priors.
+        """
+
+        prompt = ""
+        try:
+            prompt = self._coerce_payload(request.payload)
+        except ValueError:
+            prompt = ""
+        estimated_input_tokens = max(0, len(prompt) // 4)
+        notes = [
+            f"estimated_input_tokens={estimated_input_tokens}",
+            "estimated_output_tokens=256",
+            "pricing_unknown_prior",
+        ]
+        return BlockEstimate.from_prior(
+            identity,
+            time_ms_mean=750.0,
+            time_ms_std=400.0,
+            cost_usd_mean=0.01,
+            cost_usd_std=0.02,
+            expected_llm_calls=1.0,
+            expected_block_executions=1.0,
+            notes=notes,
+        )
+
     def _build_messages(self, prompt: str) -> List[Dict[str, str]]:
         """Construct the message list for the LLM call.
 
@@ -98,128 +263,6 @@ class LLMPrimitive(Block):
             messages.append({"role": "system", "content": self._system_prompt})
         messages.append({"role": "user", "content": prompt})
         return messages
-
-    def _invoke_llm(self, messages: List[Dict[str, str]]) -> Any:
-        """Invoke the LLM via LiteLLM and return raw content.
-
-        Args:
-            messages: Message list for the completion call.
-
-        Returns:
-            Model response content.
-        """
-        call_args: Dict[str, Any] = {
-            "model": self._model,
-            "messages": messages,
-            "temperature": self._temperature,
-        }
-        api_key = self._config.get_openai_api_key()
-        if api_key:
-            call_args["api_key"] = api_key
-        response_format = self._build_response_format()
-        if response_format is not None:
-            call_args["response_format"] = response_format
-        response = completion(**call_args)
-        return self._extract_content(response)
-
-    def _extract_content(self, response: Any) -> Any:
-        """Extract the content field from a LiteLLM response.
-
-        Args:
-            response: LiteLLM completion response.
-
-        Returns:
-            The message content from the first choice.
-        """
-        if isinstance(response, dict):
-            choices = response.get("choices")
-        else:
-            choices = getattr(response, "choices", None)
-        if not choices:
-            raise SchemaError("Missing choices in LLM response")
-
-        first_choice = choices[0]
-        if isinstance(first_choice, dict):
-            message = first_choice.get("message")
-        else:
-            message = getattr(first_choice, "message", None)
-        if message is None:
-            raise SchemaError("Missing message in LLM response")
-
-        if isinstance(message, dict):
-            content = message.get("content")
-        else:
-            content = getattr(message, "content", None)
-        if content is None:
-            raise SchemaError("Missing content in LLM response")
-        return content
-
-    def _validate_output(self, content: Any) -> Dict[str, Any]:
-        """Validate model content against the output schema.
-
-        Args:
-            content: Raw model content.
-
-        Returns:
-            A validated and normalized dict matching the output schema.
-        """
-        try:
-            if isinstance(content, str):
-                model = self._output_data_model.model_validate_json(content)
-            else:
-                model = self._output_data_model.model_validate(content)
-        except (ValidationError, ValueError) as exc:
-            raise SchemaError(str(exc)) from exc
-        return model.model_dump()
-
-    def _handle_error(self, error: Exception) -> Response:
-        """Map provider errors into failed Response objects.
-
-        Args:
-            error: Exception raised during execution.
-
-        Returns:
-            A failed Response containing the mapped error details.
-        """
-        if isinstance(error, SchemaError):
-            return self._failure_response("schema_error", error, SchemaError)
-        if isinstance(error, RateLimitError):
-            return self._failure_response("rate_limit_error", error, RateLimitError)
-        if isinstance(error, ApiKeyError):
-            return self._failure_response("api_key_error", error, ApiKeyError)
-        if isinstance(error, ContextLengthError):
-            return self._failure_response(
-                "context_length_error", error, ContextLengthError
-            )
-        if isinstance(error, ValueError):
-            return self._failure_response("invalid_payload", error, SchemaError)
-
-        error_name = error.__class__.__name__.lower()
-        error_message = str(error).lower()
-        if (
-            "ratelimit" in error_name
-            or "rate limit" in error_message
-            or "429" in error_message
-        ):
-            return self._failure_response("rate_limit_error", error, RateLimitError)
-        if (
-            "authentication" in error_name
-            or "auth" in error_name
-            or "api key" in error_message
-            or "apikey" in error_message
-        ):
-            return self._failure_response("api_key_error", error, ApiKeyError)
-        if "context" in error_name or "context" in error_message:
-            return self._failure_response(
-                "context_length_error", error, ContextLengthError
-            )
-
-        return Response(
-            success=False,
-            reason="llm_execution_failed",
-            details={"error": str(error)},
-            error_type=type(error),
-        )
 
     def _failure_response(
         self,
@@ -244,30 +287,61 @@ class LLMPrimitive(Block):
             error_type=error_type,
         )
 
-    def _build_response_format(self) -> Optional[Dict[str, Any]]:
-        """Build a response-format hint for LiteLLM if supported.
+    def _append_validation_feedback(
+        self, messages: List[Dict[str, str]], error_details: Dict[str, Any]
+    ) -> List[Dict[str, str]]:
+        """Append validation feedback to the message list.
+
+        Args:
+            messages: Existing message list.
+            error_details: Error details from the failed validation.
 
         Returns:
-            A response_format payload or None if not supported.
+            Updated message list including validation feedback.
         """
-        if not self._supports_response_format():
-            return None
-        schema = self._output_data_model.model_json_schema()
-        return {
-            "type": "json_schema",
-            "json_schema": {
-                "name": self._output_data_model.__name__,
-                "schema": schema,
-            },
-        }
 
-    def _supports_response_format(self) -> bool:
-        """Return True if the current model likely supports response_format.
+        feedback = self._format_validation_feedback(error_details)
+        return messages + [{"role": "user", "content": feedback}]
 
-        This is a best-effort heuristic to avoid unsupported parameter errors.
-        """
-        model_name = (self._model or "").lower()
-        return model_name.startswith("gpt-") or model_name.startswith("o")
+    def _format_validation_feedback(self, error_details: Dict[str, Any]) -> str:
+        """Format validation feedback for the LLM repair loop."""
+
+        error_text = error_details.get("error", "Unknown validation error")
+        return (
+            "The previous response failed validation. "
+            f"Validation error: {error_text}. "
+            "Please respond with valid JSON matching the required schema."
+        )
+
+    def _map_llm_failure(self, response: LLMResponse) -> Response:
+        """Map an internal LLM response failure to a block Response."""
+
+        reason = response.reason or "llm_execution_failed"
+        error_type = response.error_type or Exception
+        return Response(
+            success=False,
+            reason=reason,
+            details=response.error_details,
+            error_type=error_type,
+        )
+
+    def _build_manager_id(self) -> str:
+        """Build a unique manager identifier for auditing."""
+
+        return f"{self.name}-{uuid4().hex[:8]}"
+
+    def _resolve_api_settings(self) -> tuple[Optional[str], Optional[str]]:
+        """Resolve API base and key for LiteLLM usage."""
+
+        if self._config.use_litellm_proxy():
+            api_base = self._config.get_litellm_proxy_url()
+            api_key = (
+                self._config.get_litellm_proxy_api_key()
+                or self._config.get_openai_api_key()
+            )
+            return api_base, api_key
+
+        return None, self._config.get_openai_api_key()
 
     def get_policy_stack(self, error_type: Type[Exception]) -> List[RecoveryPolicy]:
         """Return hardcoded recovery policies for LLM failures."""
