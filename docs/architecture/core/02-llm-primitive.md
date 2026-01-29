@@ -57,6 +57,17 @@ Failure modes:
 
 Note: These are example `reason` labels. Recovery policy selection is based on `error_type` (see [Block Responses](block-responses.md)).
 
+### 3.1 Estimation Contract
+`LLMPrimitive` MUST implement `estimate_execution(request) -> BlockEstimate` as a side-effect-free estimator.
+
+Rules:
+- The estimator MUST return a `BlockEstimate` for all inputs.
+- When no historical data exists, the estimator MUST return a prior-based estimate with low confidence.
+- The estimator MAY consult a stats adapter (read-only) to derive token/cost/time distributions.
+
+See:
+- [Block Estimation](block-estimation.md)
+
 ### 4. Policy Definition (Recovery)
 
 The `LLMPrimitive` provides a default recovery mapping for its failure categories. This mapping is exposed via `get_policy_stack(error_type)` and is intended to be stable across instances.
@@ -80,6 +91,9 @@ The architecture does not require the mapping to be "hardcoded" in the class bod
 | Prompt construction | Combine `system_prompt` with schema instructions and pass user payload as a separate role. | Provider request payload. |
 | Generation | Invoke provider model. | Raw model output. |
 | Validation | Parse output against `output_data_model`. | `Response` (success or failure). |
+
+Implementation note:
+- Provider usage and cost data may be recorded or queried via a LiteLLM stats adapter. This adapter is an internal detail used to translate proxy aggregates into unified block estimates and execution records.
 
 ### 6. Example Flow (Schema Error)
 - Attempt 1 fails validation with `schema_error`.

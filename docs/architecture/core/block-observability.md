@@ -34,6 +34,17 @@ Minimum requirements:
 - Every response SHOULD include `metadata.trace_id` and `metadata.span_id`.
 - Every response SHOULD include `metadata.attempt` for nodes that can be retried or repaired.
 
+### Attempt Accounting vs. Derived Stats
+This document distinguishes between the attempt index used for recovery and the derived failure counts used for analytics.
+
+Definitions:
+- **Attempt index:** `metadata.attempt` increments on every re-execution triggered by recovery policies.
+- **Failed-attempt count (derived):** the number of failed `Response` objects returned at the block boundary within a run/trace.
+
+Guidance:
+- The attempt index is an execution control signal and MUST NOT be repurposed for analytics.
+- Failure counts should be computed from recorded attempt events (success=false) rather than from the attempt index.
+
 ### Correlation With Ledger Provenance
 If the ledger is used, ledger entry provenance SHOULD include:
 - `trace_id`
@@ -63,6 +74,11 @@ Recommended event fields:
 - `block_name`, `node_name`
 - `attempt`
 - `reason` (for failures)
+
+Optional event fields (estimation and cost):
+- `estimated_time_ms`, `estimated_cost_usd`
+- `actual_time_ms`, `actual_cost_usd`
+- `model`, `input_tokens`, `output_tokens` (when available)
 
 ## References
 - [Core Architecture Index](index.md)

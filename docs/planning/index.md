@@ -10,6 +10,8 @@ Planning artifacts used to structure and track work across features and migratio
 - [Block Architecture Docs Expansion Checklist](block-architecture-docs-expansion-checklist.md)
 - [Block Runtime Implementation Plan](block-runtime-implementation-plan.md)
 - [Block Runtime Implementation Checklist](block-runtime-implementation-checklist.md)
+- [Block Estimation Plan](block-estimation-plan.md)
+- [Block Estimation Checklist](block-estimation-checklist.md)
 - [LLM Primitive LiteLLM Integration Plan](llm-primitive-litellm-plan.md)
 - [LLM Primitive LiteLLM Integration Checklist](llm-primitive-litellm-checklist.md)
 - [LLM Primitive Functional Harness Plan](llm-primitive-functional-harness-plan.md)
@@ -34,6 +36,7 @@ Planning artifacts used to structure and track work across features and migratio
 - [Phase 3 Tool Library Plan](phase3-tool-library-plan-complete.md)
 - [Storage Layout Plan](storage-layout-plan-complete.md)
 - [VCR Fixtures Plan](vcr-fixtures-plan-complete.md)
+- [LLM Primitive Layered Plan](llm-primitive-layered-plan-complete.md)
 
 ## Roadmap
 - None yet.

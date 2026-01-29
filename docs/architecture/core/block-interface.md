@@ -43,6 +43,7 @@ The `Block` API surface is intentionally small.
 | `state` | `BlockState` | Current execution state; used to prevent re-entrancy. |
 | `get_policy_stack(error_type)` | `(type[Exception]) -> list[RecoveryPolicy]` | Returns ordered recovery strategies for a given error type. |
 | `execute(request)` | `(Request) -> Response` | Runs the block with a standardized request and returns a unified response. |
+| `estimate_execution(request)` | `(Request) -> BlockEstimate` | Returns a side-effect-free estimate of execution cost/latency/effort. |
 
 ### Request Contract (Summary)
 Blocks receive a standardized `Request` that contains payload, context, and execution metadata. When one block calls another, the calling block is responsible for constructing and pruning the request.
@@ -64,6 +65,17 @@ Deterministic execution rules for composite graphs are defined in:
 
 - A block must return a `Response` for every execution attempt.
 - A block must not use exceptions for expected control flow. Exceptions may still occur, but they are treated as internal errors and converted into a failed `Response` at the block boundary.
+
+### Estimation Semantics
+Blocks MUST expose `estimate_execution(request) -> BlockEstimate` to provide a side-effect-free estimate of the expected execution footprint.
+
+Normative rules:
+- `estimate_execution` MUST be side-effect free (no writes, no tool actions, no external work).
+- `estimate_execution` MUST return a `BlockEstimate` for all inputs; cold-start estimates are expressed via priors, not failures.
+- `estimate_execution` SHOULD be deterministic for a given request and a given stats snapshot.
+
+Canonical estimate fields and cold-start semantics are defined in:
+- [Block Estimation](block-estimation.md)
 
 ### Graph Execution (Composite Blocks)
 A block executes a graph when it is configured with child blocks.
@@ -111,6 +123,7 @@ Deterministic recovery semantics and attempt accounting are defined in:
 - [Block Recovery Semantics](block-recovery-semantics.md)
 - [Block Tool and Side-Effect Safety](block-tool-safety.md)
 - [Block Observability](block-observability.md)
+- [Block Estimation](block-estimation.md)
 - [Block Testing Guidelines](block-testing-guidelines.md)
 - [Block Architecture Open Questions](block-open-questions.md)
 - [Architecture Index](../index.md)

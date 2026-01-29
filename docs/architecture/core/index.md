@@ -14,6 +14,7 @@ Foundational primitives and block-based architecture imported from the core arch
 - [Block Recovery Semantics](block-recovery-semantics.md): Deterministic application of recovery policies.
 - [Block Tool and Side-Effect Safety](block-tool-safety.md): Retry/rollback rules for side effects.
 - [Block Observability](block-observability.md): Trace/span model and event vocabulary.
+- [Block Estimation](block-estimation.md): Estimation contract and BlockEstimate schema.
 - [Block Testing Guidelines](block-testing-guidelines.md): Deterministic unit testing patterns.
 - [Block Architecture Open Questions](block-open-questions.md): Unresolved decisions that must be specified before runtime behavior is normative.
 - [LLM Primitive](02-llm-primitive.md): The atomic unit of LLM interaction and validation.
