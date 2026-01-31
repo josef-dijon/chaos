@@ -333,87 +333,217 @@ class Block(ABC):
             A Response indicating success or failure for the node execution.
         """
         attempt = 1
-        child_request = self._build_child_request(
-            parent_request=request,
-            child=node,
+        last_child_request, response = self._execute_child_attempt(
+            node=node,
+            request=request,
             node_name=node_name,
             attempt=attempt,
+            source_request=None,
         )
-        last_child_request = child_request
-        response = node.execute(child_request)
 
         if response.success() is True:
             return response
 
         error_type = response.error_type or Exception
         policies = node.get_policy_stack(error_type)
-
         current_failure: Response = response
 
         for policy in policies:
             if isinstance(policy, RetryPolicy):
-                if not self._is_recoverable_via_retry(node):
-                    return self._unsafe_to_retry_response(node, current_failure)
-                remaining_attempts = max(policy.max_attempts - attempt, 0)
-                for _ in range(remaining_attempts):
-                    attempt += 1
-                    if policy.delay_seconds > 0:
-                        sleep(policy.delay_seconds)
-                    retry_request = self._build_child_request(
-                        parent_request=request,
-                        child=node,
-                        node_name=node_name,
-                        attempt=attempt,
-                        source_request=last_child_request,
-                    )
-                    last_child_request = retry_request
-                    retry_response = node.execute(retry_request)
-                    if retry_response.success() is True:
-                        return retry_response
-                    current_failure = retry_response
-            elif isinstance(policy, RepairPolicy):
-                if not self._is_recoverable_via_retry(node):
-                    return self._unsafe_to_retry_response(node, current_failure)
-
-                try:
-                    repair_func = RepairRegistry.get(policy.repair_function)
-                except Exception as exc:
-                    return Response(
-                        success=False,
-                        reason="repair_execution_failed",
-                        details={
-                            "repair_function": policy.repair_function,
-                            "error": build_exception_details(exc),
-                        },
-                        error_type=Exception,
-                    )
-
-                repaired = repair_func(last_child_request, current_failure)
-                attempt += 1
-
-                repaired_attempt_request = self._build_child_request(
-                    parent_request=request,
-                    child=node,
+                attempt, last_child_request, current_failure = self._apply_retry_policy(
+                    node=node,
+                    request=request,
                     node_name=node_name,
+                    policy=policy,
                     attempt=attempt,
-                    source_request=repaired,
+                    last_child_request=last_child_request,
+                    current_failure=current_failure,
                 )
-                last_child_request = repaired_attempt_request
-                repaired_response = node.execute(repaired_attempt_request)
-                if repaired_response.success() is True:
-                    return repaired_response
-                current_failure = repaired_response
+            elif isinstance(policy, RepairPolicy):
+                attempt, last_child_request, current_failure = (
+                    self._apply_repair_policy(
+                        node=node,
+                        request=request,
+                        node_name=node_name,
+                        policy=policy,
+                        attempt=attempt,
+                        last_child_request=last_child_request,
+                        current_failure=current_failure,
+                    )
+                )
             else:
-                policy_response = PolicyHandler.handle(
+                current_failure = self._apply_custom_policy(
                     policy, node, last_child_request, current_failure
                 )
-                if policy_response.success() is True:
-                    return policy_response
-                current_failure = policy_response
-                if policy.type == RecoveryType.BUBBLE:
-                    return current_failure
+
+            if current_failure.success() is True:
+                return current_failure
+            if policy.type == RecoveryType.BUBBLE:
+                return current_failure
 
         return current_failure
+
+    def _execute_child_attempt(
+        self,
+        node: "Block",
+        request: Request,
+        node_name: str,
+        attempt: int,
+        source_request: Optional[Request],
+    ) -> tuple[Request, Response]:
+        """Execute a single child attempt and return request + response.
+
+        Args:
+            node: Child block to execute.
+            request: Parent request to derive from.
+            node_name: Composite node name used to execute this child.
+            attempt: Attempt number.
+            source_request: Optional request that supplies payload/context.
+
+        Returns:
+            Tuple of (child request, child response).
+        """
+
+        child_request = self._build_child_request(
+            parent_request=request,
+            child=node,
+            node_name=node_name,
+            attempt=attempt,
+            source_request=source_request,
+        )
+        response = node.execute(child_request)
+        return child_request, response
+
+    def _apply_retry_policy(
+        self,
+        node: "Block",
+        request: Request,
+        node_name: str,
+        policy: RetryPolicy,
+        attempt: int,
+        last_child_request: Request,
+        current_failure: Response,
+    ) -> tuple[int, Request, Response]:
+        """Apply a retry policy and return updated attempt state.
+
+        Args:
+            node: Child block to execute.
+            request: Parent request to derive from.
+            node_name: Composite node name used to execute this child.
+            policy: Retry policy to apply.
+            attempt: Current attempt number.
+            last_child_request: Last child request sent.
+            current_failure: Latest failure response.
+
+        Returns:
+            Tuple of (attempt, last_child_request, latest response).
+        """
+
+        if not self._is_recoverable_via_retry(node):
+            return (
+                attempt,
+                last_child_request,
+                self._unsafe_to_retry_response(node, current_failure),
+            )
+
+        remaining_attempts = max(policy.max_attempts - attempt, 0)
+        for _ in range(remaining_attempts):
+            attempt += 1
+            if policy.delay_seconds > 0:
+                sleep(policy.delay_seconds)
+            last_child_request, response = self._execute_child_attempt(
+                node=node,
+                request=request,
+                node_name=node_name,
+                attempt=attempt,
+                source_request=last_child_request,
+            )
+            if response.success() is True:
+                return attempt, last_child_request, response
+            current_failure = response
+
+        return attempt, last_child_request, current_failure
+
+    def _apply_repair_policy(
+        self,
+        node: "Block",
+        request: Request,
+        node_name: str,
+        policy: RepairPolicy,
+        attempt: int,
+        last_child_request: Request,
+        current_failure: Response,
+    ) -> tuple[int, Request, Response]:
+        """Apply a repair policy and return updated attempt state.
+
+        Args:
+            node: Child block to execute.
+            request: Parent request to derive from.
+            node_name: Composite node name used to execute this child.
+            policy: Repair policy to apply.
+            attempt: Current attempt number.
+            last_child_request: Last child request sent.
+            current_failure: Latest failure response.
+
+        Returns:
+            Tuple of (attempt, last_child_request, latest response).
+        """
+
+        if not self._is_recoverable_via_retry(node):
+            return (
+                attempt,
+                last_child_request,
+                self._unsafe_to_retry_response(node, current_failure),
+            )
+
+        try:
+            repair_func = RepairRegistry.get(policy.repair_function)
+        except Exception as exc:
+            return (
+                attempt,
+                last_child_request,
+                Response(
+                    success=False,
+                    reason="repair_execution_failed",
+                    details={
+                        "repair_function": policy.repair_function,
+                        "error": build_exception_details(exc),
+                    },
+                    error_type=Exception,
+                ),
+            )
+
+        repaired = repair_func(last_child_request, current_failure)
+        attempt += 1
+        last_child_request, response = self._execute_child_attempt(
+            node=node,
+            request=request,
+            node_name=node_name,
+            attempt=attempt,
+            source_request=repaired,
+        )
+        return attempt, last_child_request, response
+
+    def _apply_custom_policy(
+        self,
+        policy: RecoveryPolicy,
+        node: "Block",
+        last_child_request: Request,
+        current_failure: Response,
+    ) -> Response:
+        """Apply a non-retry policy and return its response.
+
+        Args:
+            policy: Custom recovery policy.
+            node: Child block to execute.
+            last_child_request: Last child request sent.
+            current_failure: Latest failure response.
+
+        Returns:
+            Response returned by the policy handler.
+        """
+
+        return PolicyHandler.handle(policy, node, last_child_request, current_failure)
 
     def _validate_graph(self) -> Optional[Response]:
         """Validate composite graph configuration.
