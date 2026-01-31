@@ -7,7 +7,6 @@ from chaos.domain.policy import (
     RecoveryPolicy,
     RecoveryType,
     RepairPolicy,
-    RetryPolicy,
 )
 from chaos.engine.registry import RepairRegistry
 
@@ -26,9 +25,7 @@ class PolicyHandler:
         failure: Response,
     ) -> Response:
         """Dispatch to the specific handler based on policy type."""
-        if isinstance(policy, RetryPolicy):
-            return PolicyHandler.retry(policy, block, request)
-        elif isinstance(policy, RepairPolicy):
+        if isinstance(policy, RepairPolicy):
             return PolicyHandler.repair(policy, block, request, failure)
         elif isinstance(policy, DebugPolicy):
             return PolicyHandler.debug(policy, request, failure)
@@ -37,8 +34,6 @@ class PolicyHandler:
         else:
             # Fallback for when type field matches but class doesn't (deserialization edge cases)
             # or just simple duck typing check
-            if policy.type == RecoveryType.RETRY:
-                return PolicyHandler.retry(policy, block, request)  # type: ignore
             if policy.type == RecoveryType.REPAIR:
                 return PolicyHandler.repair(policy, block, request, failure)  # type: ignore
             if policy.type == RecoveryType.DEBUG:
@@ -51,21 +46,6 @@ class PolicyHandler:
                 reason=f"unknown_policy_type:{policy.type}",
                 details={"policy_type": str(policy.type)},
             )
-
-    @staticmethod
-    def retry(policy: RetryPolicy, block: "Block", request: Request) -> Response:
-        """Execute the block again, respecting max_attempts."""
-        # Note: In a real async system, we would sleep here (policy.delay_seconds)
-        # For now, this is a direct recursive call (simple retry)
-        # TODO: track attempt count in metadata to prevent infinite loops if not handled by caller
-
-        # We assume the caller (composite) tracks the number of attempts.
-        # But wait, if the policy itself has 'max_attempts', the caller needs to know
-        # how many times we've tried *this specific policy*.
-
-        # For this primitive implementation, let's just re-execute once per call.
-        # The composite loop is responsible for the "looping" part.
-        return block.execute(request)
 
     @staticmethod
     def repair(
