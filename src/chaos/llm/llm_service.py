@@ -1,64 +1,47 @@
-from typing import Any, Dict, Optional, Tuple
+from __future__ import annotations
 
-from litellm import completion
-from pydantic import BaseModel, ValidationError
+import os
+from typing import Any, Callable, Dict, List, Optional
 
-from chaos.domain.exceptions import SchemaError
+from pydantic import BaseModel
+
+from pydantic_ai import Agent, ModelSettings
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
+
+try:
+    from openai import AsyncOpenAI
+except ImportError:  # pragma: no cover
+    AsyncOpenAI = None  # type: ignore
+
 from chaos.llm.llm_error_mapper import map_llm_error
 from chaos.llm.llm_request import LLMRequest
 from chaos.llm.llm_response import LLMResponse
-from chaos.llm.llm_retry_policy import (
-    DEFAULT_MAX_ATTEMPTS,
-    default_retry_exceptions,
-    default_wait_strategy,
-)
-from chaos.llm.response_status import ResponseStatus
-from chaos.llm.stable_transport import StableTransport
-
-try:
-    import instructor  # type: ignore
-except ImportError:  # pragma: no cover
-    instructor = None
 
 
 class LLMService:
-    """LLM execution service that wraps schema enforcement and transport."""
+    """LLM execution service implemented via PydanticAI.
+
+    PydanticAI is responsible for structured-output validation retries.
+    """
 
     def __init__(
         self,
-        transport: Optional[StableTransport] = None,
-        use_instructor: bool = True,
-        retry_exceptions: Optional[Tuple[type[Exception], ...]] = None,
-        max_attempts: int = DEFAULT_MAX_ATTEMPTS,
-        wait_strategy: Optional[Any] = None,
+        output_retries: int = 2,
+        api_max_retries: int = 2,
+        model_builder: Optional[Callable[[LLMRequest], OpenAIChatModel]] = None,
     ) -> None:
         """Initialize the LLM service.
 
         Args:
-            transport: Optional transport override.
-            use_instructor: Whether to use instructor for schema enforcement.
-            retry_exceptions: Exception types eligible for transport retry.
-            max_attempts: Maximum transport retry attempts.
-            wait_strategy: Tenacity wait strategy override.
+            output_retries: Number of PydanticAI output validation retries.
+            api_max_retries: Number of API retries performed by the provider SDK.
+            model_builder: Optional override for building the PydanticAI model.
         """
 
-        self._use_instructor = use_instructor and instructor is not None
-        completion_callable = completion
-        if self._use_instructor:
-            assert instructor is not None
-            completion_callable = instructor.patch(completion)
-        resolved_retry_exceptions = (
-            default_retry_exceptions() if retry_exceptions is None else retry_exceptions
-        )
-        resolved_wait = (
-            default_wait_strategy() if wait_strategy is None else wait_strategy
-        )
-        self._transport = transport or StableTransport(
-            completion_callable,
-            retry_exceptions=resolved_retry_exceptions,
-            max_attempts=max_attempts,
-            wait_strategy=resolved_wait,
-        )
+        self._output_retries = max(0, int(output_retries))
+        self._api_max_retries = max(0, int(api_max_retries))
+        self._model_builder = model_builder
 
     def execute(self, request: LLMRequest) -> LLMResponse:
         """Execute the LLM call and return a structured response.
@@ -70,23 +53,16 @@ class LLMService:
             LLMResponse containing success or failure information.
         """
 
-        call_args = self._build_call_args(request)
         try:
-            if self._use_instructor:
-                call_args["response_model"] = request.output_data_model
-                result = self._transport.complete(call_args)
-                data = self._normalize_instructor_output(
-                    result, request.output_data_model
-                )
-                return LLMResponse.success(data=data, raw_output=None)
-
-            response = self._transport.complete(call_args)
-            content = self._extract_content(response)
-            data = self._validate_output(content, request.output_data_model)
-            usage = self._extract_usage(response)
-            return LLMResponse.success(data=data, raw_output=response, usage=usage)
+            system_prompt, user_prompt = self._render_prompts(request.messages)
+            data, usage = self._run_agent(
+                request=request,
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+            )
+            return LLMResponse.success(data=data, raw_output=None, usage=usage)
         except Exception as exc:
-            mapping = map_llm_error(self._normalize_error(exc))
+            mapping = map_llm_error(exc)
             return LLMResponse.failure(
                 status=mapping.status,
                 reason=mapping.reason,
@@ -94,157 +70,123 @@ class LLMService:
                 error_details=mapping.details,
             )
 
-    def _build_call_args(self, request: LLMRequest) -> Dict[str, Any]:
-        """Build LiteLLM call arguments from the internal request.
+    def _render_prompts(
+        self, messages: List[Dict[str, str]]
+    ) -> tuple[Optional[str], str]:
+        """Render OpenAI-style role messages into system + user prompts.
 
         Args:
-            request: LLM request to translate.
+            messages: OpenAI-style role/content messages.
 
         Returns:
-            Keyword arguments for LiteLLM completion.
+            Tuple of (system_prompt, user_prompt).
         """
 
-        call_args: Dict[str, Any] = {
-            "model": request.model,
-            "messages": request.messages,
-            "temperature": request.temperature,
-            "metadata": request.metadata,
-        }
-        if not self._use_instructor:
-            response_format = self._build_response_format(request)
-            if response_format is not None:
-                call_args["response_format"] = response_format
-        if request.api_base:
-            call_args["api_base"] = request.api_base
-        if request.api_key:
-            call_args["api_key"] = request.api_key
-        return call_args
-
-    def _normalize_instructor_output(
-        self, result: Any, model: type[BaseModel]
-    ) -> Dict[str, Any]:
-        """Normalize instructor output into a dict.
-
-        Args:
-            result: Result returned by instructor.
-            model: Expected output data model.
-
-        Returns:
-            Parsed data dict.
-        """
-
-        if isinstance(result, BaseModel):
-            return result.model_dump()
-        if isinstance(result, dict):
-            return result
-        if isinstance(result, str):
-            return self._validate_output(result, model)
-        raise SchemaError("Unsupported instructor response type")
-
-    def _extract_content(self, response: Any) -> Any:
-        """Extract the content field from a LiteLLM response.
-
-        Args:
-            response: LiteLLM completion response.
-
-        Returns:
-            The message content from the first choice.
-        """
-
-        if isinstance(response, dict):
-            choices = response.get("choices")
-        else:
-            choices = getattr(response, "choices", None)
-        if not choices:
-            raise SchemaError("Missing choices in LLM response")
-
-        first_choice = choices[0]
-        if isinstance(first_choice, dict):
-            message = first_choice.get("message")
-        else:
-            message = getattr(first_choice, "message", None)
-        if message is None:
-            raise SchemaError("Missing message in LLM response")
-
-        if isinstance(message, dict):
-            content = message.get("content")
-        else:
-            content = getattr(message, "content", None)
-        if content is None:
-            raise SchemaError("Missing content in LLM response")
-        return content
-
-    def _extract_usage(self, response: Any) -> Optional[Dict[str, Any]]:
-        """Extract usage metadata from a LiteLLM response.
-
-        Args:
-            response: LiteLLM completion response.
-
-        Returns:
-            Usage metadata if available.
-        """
-
-        if isinstance(response, dict):
-            return response.get("usage")
-        return getattr(response, "usage", None)
-
-    def _validate_output(self, content: Any, model: type[BaseModel]) -> Dict[str, Any]:
-        """Validate model content against the output schema.
-
-        Args:
-            content: Raw model content.
-            model: Pydantic model used to validate output.
-
-        Returns:
-            A validated and normalized dict matching the output schema.
-        """
-
-        try:
-            if isinstance(content, str):
-                parsed = model.model_validate_json(content)
+        system_parts: list[str] = []
+        non_system: list[Dict[str, str]] = []
+        for message in messages:
+            role = (message.get("role") or "").strip()
+            content = (message.get("content") or "").strip()
+            if not content:
+                continue
+            if role == "system":
+                system_parts.append(content)
             else:
-                parsed = model.model_validate(content)
-        except (ValidationError, ValueError) as exc:
-            raise SchemaError(str(exc)) from exc
-        return parsed.model_dump()
+                non_system.append({"role": role, "content": content})
 
-    def _normalize_error(self, error: Exception) -> Exception:
-        """Normalize exceptions into domain errors where possible."""
+        system_prompt = "\n\n".join(system_parts).strip() or None
 
-        if isinstance(error, SchemaError):
-            return error
-        return error
+        if len(non_system) == 1 and non_system[0].get("role") == "user":
+            return system_prompt, non_system[0]["content"]
 
-    def _build_response_format(self, request: LLMRequest) -> Optional[Dict[str, Any]]:
-        """Build a response-format hint for LiteLLM if supported.
+        rendered: list[str] = []
+        for msg in non_system:
+            role = msg.get("role") or "user"
+            label = role.capitalize()
+            rendered.append(f"{label}: {msg.get('content', '')}")
+        return system_prompt, "\n\n".join(rendered).strip()
+
+    def _run_agent(
+        self,
+        request: LLMRequest,
+        system_prompt: Optional[str],
+        user_prompt: str,
+    ) -> tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
+        """Run PydanticAI and return validated output + usage.
+
+        This is isolated for testability: unit tests should patch this method.
 
         Args:
-            request: LLM request being executed.
+            request: Internal LLMRequest.
+            system_prompt: Optional system prompt.
+            user_prompt: User prompt content.
 
         Returns:
-            A response_format payload or None if not supported.
+            Tuple of (validated_data, usage_dict).
         """
 
-        if not self._supports_response_format(request.model):
-            return None
-        schema = request.output_data_model.model_json_schema()
-        return {
-            "type": "json_schema",
-            "json_schema": {
-                "name": request.output_data_model.__name__,
-                "schema": schema,
-            },
+        model = self._build_model(request)
+        agent = Agent(
+            model,
+            system_prompt=system_prompt or (),
+            output_type=request.output_data_model,
+            output_retries=self._output_retries,
+        )
+        result = agent.run_sync(
+            user_prompt,
+            model_settings=ModelSettings(temperature=request.temperature),
+        )
+
+        output = result.output
+        if isinstance(output, BaseModel):
+            data = output.model_dump()
+        elif isinstance(output, dict):
+            data = output
+        else:
+            raise TypeError(f"Unexpected PydanticAI output type: {type(output)}")
+
+        usage_obj = result.usage()
+        usage = {
+            "requests": getattr(usage_obj, "requests", None),
+            "input_tokens": getattr(usage_obj, "input_tokens", None),
+            "output_tokens": getattr(usage_obj, "output_tokens", None),
         }
+        usage = {k: v for k, v in usage.items() if v is not None}
+        return data, usage or None
 
-    def _supports_response_format(self, model: str) -> bool:
-        """Return True if the model likely supports response_format.
+    def _build_model(self, request: LLMRequest) -> OpenAIChatModel:
+        """Build the PydanticAI model for a request.
 
         Args:
-            model: Model name to check.
+            request: LLM request describing the target model and credentials.
 
         Returns:
-            True if response_format should be safe to send.
+            An OpenAIChatModel configured for direct or proxy (LiteLLM) usage.
         """
 
-        model_name = (model or "").lower()
-        return model_name.startswith("gpt-") or model_name.startswith("o")
+        if self._model_builder is not None:
+            return self._model_builder(request)
+
+        if AsyncOpenAI is None:  # pragma: no cover
+            # This should not happen in production since `pydantic-ai-slim[openai]`
+            # installs the OpenAI SDK.
+            return OpenAIChatModel(request.model)
+
+        api_key = request.api_key or os.environ.get("OPENAI_API_KEY")
+        if api_key is None:
+            # Allow tests and callers to inject an already-configured model via
+            # `model_builder`, and avoid instantiating the OpenAI SDK client
+            # without credentials.
+            return OpenAIChatModel(request.model)
+
+        client_kwargs: Dict[str, Any] = {
+            "api_key": api_key,
+            "max_retries": self._api_max_retries,
+        }
+        if request.api_base:
+            # OpenAI-compatible proxy base url (e.g. LiteLLM proxy).
+            client_kwargs["base_url"] = request.api_base
+
+        openai_client = AsyncOpenAI(**client_kwargs)
+        provider = OpenAIProvider(openai_client=openai_client)
+        return OpenAIChatModel(request.model, provider=provider)

@@ -13,14 +13,9 @@ from chaos.domain.exceptions import (
     SchemaError,
 )
 from chaos.domain.messages import Request, Response
-from chaos.domain.policy import (
-    BubblePolicy,
-    RecoveryPolicy,
-    RecoveryType,
-    RepairPolicy,
-    RetryPolicy,
-)
+from chaos.domain.policy import BubblePolicy, RecoveryPolicy
 from chaos.llm.litellm_stats_adapter import LiteLLMStatsAdapter
+from chaos.llm.llm_executor import LLMExecutor
 from chaos.llm.llm_request import LLMRequest
 from chaos.llm.llm_response import LLMResponse
 from chaos.llm.llm_service import LLMService
@@ -43,10 +38,9 @@ class LLMPrimitive(Block):
         temperature: float = 0.0,
         config: Optional[Config] = None,
         stats_adapter: Optional[LiteLLMStatsAdapter] = None,
-        llm_service: Optional[LLMService] = None,
+        llm_service: Optional[LLMExecutor] = None,
         model_selector: Optional[ModelSelector] = None,
-        use_instructor: bool = True,
-        max_repair_attempts: int = 2,
+        output_retries: int = 2,
     ):
         """Initialize the LLM primitive.
 
@@ -58,10 +52,9 @@ class LLMPrimitive(Block):
             temperature: Sampling temperature for the model.
             config: Optional Config instance for provider settings.
             stats_adapter: Optional stats adapter for LLM estimation.
-            llm_service: Optional LLM service override.
+            llm_service: Optional LLM executor override.
             model_selector: Optional model selector override.
-            use_instructor: Whether to use instructor for schema enforcement.
-            max_repair_attempts: Number of semantic repair attempts.
+            output_retries: Number of PydanticAI output validation retries.
         """
         self._config = config or Config.load()
         resolved_model = model or self._config.get_model_name()
@@ -71,9 +64,10 @@ class LLMPrimitive(Block):
         self._model = resolved_model
         self._temperature = temperature
         self._stats_adapter = stats_adapter or LiteLLMStatsAdapter(get_default_store())
-        self._llm_service = llm_service or LLMService(use_instructor=use_instructor)
+        self._llm_service: LLMExecutor = llm_service or LLMService(
+            output_retries=output_retries
+        )
         self._model_selector = model_selector or ModelSelector()
-        self._max_repair_attempts = max(0, max_repair_attempts)
 
     def build(self) -> None:
         """Atomic blocks do not have a graph."""
@@ -91,38 +85,37 @@ class LLMPrimitive(Block):
         manager_id = self._build_manager_id()
         api_base, api_key = self._resolve_api_settings()
 
-        max_attempts = 1 + self._max_repair_attempts
-        attempt = 1
-        while attempt <= max_attempts:
-            llm_request = self._build_llm_request(
-                request=request,
-                messages=messages,
-                model=model,
-                manager_id=manager_id,
-                attempt=attempt,
-                api_base=api_base,
-                api_key=api_key,
-            )
-            llm_response = self._llm_service.execute(llm_request)
-            if llm_response.status == ResponseStatus.SUCCESS:
-                return Response(success=True, data=llm_response.data)
-            if (
-                llm_response.status == ResponseStatus.SEMANTIC_ERROR
-                and attempt < max_attempts
-            ):
-                messages = self._append_validation_feedback(
-                    messages, llm_response.error_details
-                )
-                attempt += 1
-                continue
-            return self._map_llm_failure(llm_response)
-
-        return Response(
-            success=False,
-            reason="llm_execution_failed",
-            details={"error": "LLM execution failed"},
-            error_type=Exception,
+        llm_request = self._build_llm_request(
+            request=request,
+            messages=messages,
+            model=model,
+            manager_id=manager_id,
+            attempt=1,
+            api_base=api_base,
+            api_key=api_key,
         )
+        llm_response = self._llm_service.execute(llm_request)
+        response_metadata: Dict[str, Any] = {"model": model}
+        if llm_response.usage:
+            response_metadata["llm_usage"] = dict(llm_response.usage)
+            llm_calls = llm_response.usage.get("requests")
+            if isinstance(llm_calls, int):
+                response_metadata["llm_calls"] = llm_calls
+                response_metadata["llm_retry_count"] = max(0, llm_calls - 1)
+            input_tokens = llm_response.usage.get("input_tokens")
+            if isinstance(input_tokens, int):
+                response_metadata["input_tokens"] = input_tokens
+            output_tokens = llm_response.usage.get("output_tokens")
+            if isinstance(output_tokens, int):
+                response_metadata["output_tokens"] = output_tokens
+        if llm_response.status == ResponseStatus.SUCCESS:
+            return Response(
+                success=True, data=llm_response.data, metadata=response_metadata
+            )
+
+        failure = self._map_llm_failure(llm_response)
+        failure.metadata.update(response_metadata)
+        return failure
 
     @property
     def block_type(self) -> str:
@@ -150,8 +143,22 @@ class LLMPrimitive(Block):
         """Build a stats record for an LLM execution attempt."""
 
         record = super()._build_attempt_record(request, response, duration_ms)
+        model = response.metadata.get("model") or self._model
+        llm_calls = response.metadata.get("llm_calls")
+        input_tokens = response.metadata.get("input_tokens")
+        output_tokens = response.metadata.get("output_tokens")
         return record.model_copy(
-            update={"llm_calls": 1, "model": self._model, "block_executions": 1}
+            update={
+                "llm_calls": int(llm_calls) if isinstance(llm_calls, int) else 1,
+                "model": str(model) if model is not None else None,
+                "input_tokens": int(input_tokens)
+                if isinstance(input_tokens, int)
+                else None,
+                "output_tokens": int(output_tokens)
+                if isinstance(output_tokens, int)
+                else None,
+                "block_executions": 1,
+            }
         )
 
     def _coerce_payload(self, payload: Any) -> str:
@@ -287,32 +294,6 @@ class LLMPrimitive(Block):
             error_type=error_type,
         )
 
-    def _append_validation_feedback(
-        self, messages: List[Dict[str, str]], error_details: Dict[str, Any]
-    ) -> List[Dict[str, str]]:
-        """Append validation feedback to the message list.
-
-        Args:
-            messages: Existing message list.
-            error_details: Error details from the failed validation.
-
-        Returns:
-            Updated message list including validation feedback.
-        """
-
-        feedback = self._format_validation_feedback(error_details)
-        return messages + [{"role": "user", "content": feedback}]
-
-    def _format_validation_feedback(self, error_details: Dict[str, Any]) -> str:
-        """Format validation feedback for the LLM repair loop."""
-
-        error_text = error_details.get("error", "Unknown validation error")
-        return (
-            "The previous response failed validation. "
-            f"Validation error: {error_text}. "
-            "Please respond with valid JSON matching the required schema."
-        )
-
     def _map_llm_failure(self, response: LLMResponse) -> Response:
         """Map an internal LLM response failure to a block Response."""
 
@@ -331,7 +312,7 @@ class LLMPrimitive(Block):
         return f"{self.name}-{uuid4().hex[:8]}"
 
     def _resolve_api_settings(self) -> tuple[Optional[str], Optional[str]]:
-        """Resolve API base and key for LiteLLM usage."""
+        """Resolve API base and key for OpenAI-compatible routing."""
 
         if self._config.use_litellm_proxy():
             api_base = self._config.get_litellm_proxy_url()
@@ -346,19 +327,5 @@ class LLMPrimitive(Block):
     def get_policy_stack(self, error_type: Type[Exception]) -> List[RecoveryPolicy]:
         """Return hardcoded recovery policies for LLM failures."""
 
-        if issubclass(error_type, SchemaError):
-            return [
-                RetryPolicy(max_attempts=1),  # Simple Retry
-                RepairPolicy(repair_function="add_validation_feedback"),  # Feedback 1
-                RepairPolicy(repair_function="add_validation_feedback"),  # Feedback 2
-                BubblePolicy(),
-            ]
-
-        if issubclass(error_type, RateLimitError):
-            return [
-                RetryPolicy(max_attempts=3, delay_seconds=2.0),  # Wait and Retry
-                BubblePolicy(),
-            ]
-
-        # ApiKeyError, ContextLengthError, and others bubble immediately
+        # PydanticAI owns API retry + schema retry; callers must bubble.
         return [BubblePolicy()]

@@ -1,5 +1,20 @@
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+
+try:
+    import httpx
+except ImportError:  # pragma: no cover
+    httpx = None
+
+try:
+    from pydantic import ValidationError
+except ImportError:  # pragma: no cover
+    ValidationError = None  # type: ignore
+
+try:
+    from pydantic_ai import UnexpectedModelBehavior
+except ImportError:  # pragma: no cover
+    UnexpectedModelBehavior = None  # type: ignore
 
 from chaos.domain.exceptions import (
     ApiKeyError,
@@ -8,7 +23,6 @@ from chaos.domain.exceptions import (
     SchemaError,
 )
 from chaos.llm.response_status import ResponseStatus
-from chaos.llm.stable_transport import StableTransportError
 
 
 @dataclass(frozen=True)
@@ -31,7 +45,49 @@ def map_llm_error(error: Exception) -> LLMErrorMapping:
         LLMErrorMapping describing the failure.
     """
 
-    details = {"error": str(error)}
+    details: Dict[str, Any] = {"error": str(error)}
+
+    cause = getattr(error, "__cause__", None)
+    if cause is not None:
+        details["cause"] = str(cause)
+
+    if ValidationError is not None and isinstance(error, ValidationError):
+        return LLMErrorMapping(
+            status=ResponseStatus.SEMANTIC_ERROR,
+            reason="schema_error",
+            error_type=SchemaError,
+            details=details,
+        )
+    if (
+        UnexpectedModelBehavior is not None
+        and isinstance(error, UnexpectedModelBehavior)
+        and ValidationError is not None
+        and isinstance(cause, ValidationError)
+    ):
+        return LLMErrorMapping(
+            status=ResponseStatus.SEMANTIC_ERROR,
+            reason="schema_error",
+            error_type=SchemaError,
+            details=details,
+        )
+
+    if httpx is not None and isinstance(error, httpx.HTTPStatusError):
+        status_code = error.response.status_code
+        details["status_code"] = status_code
+        if status_code == 429:
+            return LLMErrorMapping(
+                status=ResponseStatus.MECHANICAL_ERROR,
+                reason="rate_limit_error",
+                error_type=RateLimitError,
+                details=details,
+            )
+        if status_code in (401, 403):
+            return LLMErrorMapping(
+                status=ResponseStatus.CONFIG_ERROR,
+                reason="api_key_error",
+                error_type=ApiKeyError,
+                details=details,
+            )
     if isinstance(error, SchemaError):
         return LLMErrorMapping(
             status=ResponseStatus.SEMANTIC_ERROR,
@@ -60,16 +116,25 @@ def map_llm_error(error: Exception) -> LLMErrorMapping:
             error_type=ContextLengthError,
             details=details,
         )
-    if isinstance(error, StableTransportError):
-        return LLMErrorMapping(
-            status=ResponseStatus.MECHANICAL_ERROR,
-            reason="transport_error",
-            error_type=StableTransportError,
-            details=details,
-        )
-
     error_name = error.__class__.__name__.lower()
     error_message = str(error).lower()
+
+    if (
+        UnexpectedModelBehavior is not None
+        and isinstance(error, UnexpectedModelBehavior)
+        and (
+            "validation" in error_message
+            or "schema" in error_message
+            or "json" in error_message
+            or "output" in error_message
+        )
+    ):
+        return LLMErrorMapping(
+            status=ResponseStatus.SEMANTIC_ERROR,
+            reason="schema_error",
+            error_type=SchemaError,
+            details=details,
+        )
     if (
         "ratelimit" in error_name
         or "rate limit" in error_message
