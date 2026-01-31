@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretStr
 
 from chaos.config import Config
 from chaos.domain.exceptions import (
@@ -39,7 +39,11 @@ class StubLLMService:
 
     def execute(self, request: LLMRequest) -> LLMResponse:
         if self._capture is not None:
-            self._capture["api_key"] = request.api_key
+            api_key = request.api_key
+            if isinstance(api_key, SecretStr):
+                self._capture["api_key"] = api_key.get_secret_value()
+            else:
+                self._capture["api_key"] = api_key
             self._capture["api_base"] = request.api_base
             self._capture["model"] = request.model
             self._capture["messages"] = request.messages
@@ -317,7 +321,7 @@ def test_llm_primitive_records_llm_usage_in_attempt_record() -> None:
     response = block.execute(Request(payload={"prompt": "hello"}))
     assert response.success() is True
     assert response.metadata["llm_calls"] == 3
-    assert response.metadata["llm_retry_count"] == 2
+    assert response.metadata["llm.retry_count"] == 2
 
     record = store._records[-1]
     assert record.model == "selected-model"

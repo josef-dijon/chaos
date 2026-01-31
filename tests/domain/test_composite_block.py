@@ -81,7 +81,7 @@ def test_composite_retry_exhausted():
     response = composite.execute(Request())
 
     assert response.success() is False
-    assert child.attempts == 3
+    assert child.attempts == 2
 
 
 def test_composite_bubble():

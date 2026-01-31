@@ -67,6 +67,41 @@ class RepairableBlock(Block):
         pass
 
 
+class CaptureRequestIdBlock(Block):
+    """A block that captures request ids for retry assertions."""
+
+    def __init__(self, name: str, max_attempts: int = 2, delay_seconds: float = 0.0):
+        super().__init__(name=name)
+        self.request_ids: list[str] = []
+        self.policies: list[RecoveryPolicy] = [
+            RetryPolicy(max_attempts=max_attempts, delay_seconds=delay_seconds)
+        ]
+
+    def _execute_primitive(self, request: Request):
+        self.request_ids.append(str(request.metadata.get("id", "")))
+        return Response(success=False, reason="fail")
+
+    def get_policy_stack(self, error_type) -> list[RecoveryPolicy]:
+        return self.policies
+
+    def build(self) -> None:
+        pass
+
+
+class MetadataBlock(Block):
+    """A block that returns conflicting metadata for overwrite tests."""
+
+    def _execute_primitive(self, request: Request):
+        return Response(
+            success=True,
+            data="ok",
+            metadata={"id": "child-id", "trace_id": "child-trace"},
+        )
+
+    def build(self) -> None:
+        pass
+
+
 class GraphBuilderBlock(Block):
     def __init__(self, name: str):
         self._child = AlwaysSuccessBlock("child")
@@ -92,6 +127,7 @@ def test_composite_max_steps_exceeded():
 
 
 def test_composite_no_transition_when_no_branch_matches():
+    """Returns no_transition when no condition matches."""
     block_a = AlwaysSuccessBlock("A", data=1)
     block_b = AlwaysSuccessBlock("B")
 
@@ -115,6 +151,7 @@ def test_composite_no_transition_when_no_branch_matches():
 
 
 def test_composite_condition_resolution_error_fails_fast():
+    """Returns condition_resolution_error for missing condition functions."""
     block_a = AlwaysSuccessBlock("A")
     block_b = AlwaysSuccessBlock("B")
 
@@ -131,6 +168,7 @@ def test_composite_condition_resolution_error_fails_fast():
 
 
 def test_retry_forbidden_for_non_idempotent_side_effects():
+    """Returns unsafe_to_retry and preserves failure details."""
     child = AlwaysFailBlock("child", side_effect_class="non_idempotent")
     composite = CompositeBlockStub(
         "composite", nodes={"child": child}, entry_point="child"
@@ -139,7 +177,77 @@ def test_retry_forbidden_for_non_idempotent_side_effects():
     response = composite.execute(Request())
     assert response.success() is False
     assert response.reason == "unsafe_to_retry"
+    assert response.details["failure_reason"] == "fail"
     assert child.attempts == 1
+
+
+def test_condition_execution_error_returns_failure():
+    """Returns condition_execution_error when condition raises."""
+    block_a = AlwaysSuccessBlock("A")
+    block_b = AlwaysSuccessBlock("B")
+
+    @ConditionRegistry.register("explode")
+    def explode(_: Response) -> bool:
+        raise RuntimeError("boom")
+
+    try:
+        composite = CompositeBlockStub(
+            "composite",
+            nodes={"A": block_a, "B": block_b},
+            entry_point="A",
+            transitions={"A": [{"condition": "explode", "target": "B"}]},
+        )
+
+        response = composite.execute(Request())
+        assert response.success() is False
+        assert response.reason == "condition_execution_error"
+        assert response.details["condition"] == "explode"
+    finally:
+        ConditionRegistry.clear()
+
+
+def test_child_request_ids_unique_and_parent_metadata_overwrites():
+    """Ensures child request ids are unique and parent metadata wins."""
+    child = CaptureRequestIdBlock("child")
+    composite = CompositeBlockStub(
+        "composite",
+        nodes={"child": child},
+        entry_point="child",
+    )
+
+    request = Request(metadata={"id": "root-id", "trace_id": "root-trace"})
+    response = composite.execute(request)
+
+    assert response.success() is False
+    assert response.metadata["id"] == "root-id"
+    assert response.metadata["trace_id"] == "root-trace"
+    assert len(child.request_ids) == 2
+    assert len(set(child.request_ids)) == 2
+    assert "root-id" not in child.request_ids
+
+
+def test_retry_delay_is_applied(monkeypatch):
+    """Applies delay_seconds for retry attempts."""
+    import chaos.domain.block as block_module
+
+    delays: list[float] = []
+
+    def fake_sleep(seconds: float) -> None:
+        delays.append(seconds)
+
+    monkeypatch.setattr(block_module, "sleep", fake_sleep)
+
+    child = CaptureRequestIdBlock("child", max_attempts=2, delay_seconds=0.25)
+    composite = CompositeBlockStub(
+        "composite",
+        nodes={"child": child},
+        entry_point="child",
+    )
+
+    response = composite.execute(Request())
+
+    assert response.success() is False
+    assert delays == [0.25]
 
 
 def test_build_sets_graph_and_executes():
@@ -191,7 +299,7 @@ def test_repair_increments_attempt_and_uses_child_envelope() -> None:
         assert child.seen_attempts == [1, 2]
         assert captured["attempt"] == 1
         assert captured["node_name"] == "child"
-        assert response.metadata.get("attempt") == 2
+        assert response.metadata.get("attempt") == 1
         assert response.metadata.get("node_name") == "child"
         assert "trace_id" in response.metadata
         assert "span_id" in response.metadata

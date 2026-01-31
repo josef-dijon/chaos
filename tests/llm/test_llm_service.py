@@ -70,7 +70,7 @@ def test_llm_service_rate_limit_mapping(monkeypatch: pytest.MonkeyPatch) -> None
     service = LLMService()
 
     def fake_run_agent(*, request, system_prompt, user_prompt):
-        raise Exception("429 Too Many Requests")
+        raise RateLimitError("Too many requests")
 
     monkeypatch.setattr(service, "_run_agent", fake_run_agent)
     request = _build_request()
@@ -79,6 +79,24 @@ def test_llm_service_rate_limit_mapping(monkeypatch: pytest.MonkeyPatch) -> None
     assert response.status == ResponseStatus.MECHANICAL_ERROR
     assert response.reason == "rate_limit_error"
     assert response.error_type == RateLimitError
+
+
+def test_llm_service_unknown_error_maps_internal_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Ensure unknown exceptions map to internal errors."""
+    service = LLMService()
+
+    def fake_run_agent(*, request, system_prompt, user_prompt):
+        raise ValueError("boom")
+
+    monkeypatch.setattr(service, "_run_agent", fake_run_agent)
+    request = _build_request()
+    response = service.execute(request)
+
+    assert response.status == ResponseStatus.MECHANICAL_ERROR
+    assert response.reason == "internal_error"
+    assert response.error_type == ValueError
 
 
 def test_llm_service_render_prompts_single_user() -> None:
@@ -290,5 +308,24 @@ def test_llm_error_mapper_api_key_message() -> None:
 
 
 def test_llm_error_mapper_context_message() -> None:
-    mapping = map_llm_error(Exception("context length exceeded"))
+    try:
+        import httpx
+    except ImportError:  # pragma: no cover
+        pytest.skip("httpx not installed")
+
+    request = httpx.Request("POST", "https://example.com")
+    response = httpx.Response(
+        400,
+        request=request,
+        json={
+            "error": {
+                "code": "context_length_exceeded",
+                "message": "maximum context length exceeded",
+            }
+        },
+    )
+    err = httpx.HTTPStatusError("context too long", request=request, response=response)
+
+    mapping = map_llm_error(err)
+
     assert mapping.reason == "context_length_error"

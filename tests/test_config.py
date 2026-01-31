@@ -17,12 +17,12 @@ def test_config_load_defaults(tmp_path: Path) -> None:
     assert config.get_chroma_db_path() == Path(".chaos") / "db" / "chroma"
     assert config.get_raw_db_path() == Path(".chaos") / "db" / "raw.sqlite"
     assert config.get_block_stats_path() == (Path(".chaos") / "db" / "block_stats.json")
-    assert config.use_litellm_proxy() is True
+    assert config.use_litellm_proxy() is False
     assert config.get_litellm_proxy_url() is None
     assert config.get_litellm_proxy_api_key() is None
 
 
-def test_config_load_from_file(tmp_path: Path) -> None:
+def test_config_load_from_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Loads configuration values from JSON when present."""
     config_path = tmp_path / "config.json"
     config_path.write_text(
@@ -42,6 +42,7 @@ def test_config_load_from_file(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     config = Config.load(path=config_path)
 
     assert config.get_model_name() == "gpt-4o-mini"
@@ -52,6 +53,49 @@ def test_config_load_from_file(tmp_path: Path) -> None:
     assert config.get_chroma_db_path() == Path(".chaos") / "db" / "chroma"
     assert config.get_raw_db_path() == Path(".chaos") / "db" / "raw.sqlite"
     assert config.get_block_stats_path() == (Path(".chaos") / "db" / "block_stats.json")
+
+
+def test_config_env_overrides_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Environment variables override JSON config values."""
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        """
+        {
+          "model_name": "gpt-4o-mini",
+          "openai_api_key": "json-key",
+          "litellm_use_proxy": false
+        }
+        """,
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("MODEL_NAME", "env-model")
+    monkeypatch.setenv("OPENAI_API_KEY", "env-key")
+
+    config = Config.load(path=config_path)
+
+    assert config.get_model_name() == "env-model"
+    assert config.get_openai_api_key() == "env-key"
+
+
+def test_config_proxy_requires_url(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Requires a proxy URL when LiteLLM proxy mode is enabled."""
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        """
+        {
+          "litellm_use_proxy": true
+        }
+        """,
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("LITELLM_PROXY_URL", raising=False)
+
+    with pytest.raises(ValidationError):
+        Config.load(path=config_path)
 
 
 def test_config_provider_loads_custom_path(tmp_path: Path) -> None:
