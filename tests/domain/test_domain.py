@@ -1,7 +1,12 @@
 from typing import Any, Dict, cast
 
 from chaos.domain.block import Block
-from chaos.domain.messages import Request, Response
+from chaos.domain.messages import (
+    Request,
+    Response,
+    reset_request_id_factory,
+    set_request_id_factory,
+)
 from chaos.domain.policy import BubblePolicy, RecoveryType
 from chaos.domain.state import BlockState
 
@@ -53,6 +58,16 @@ def test_request_preserves_id_across_execute():
 
     assert req.metadata["id"] == "request-id"
     assert resp.metadata["id"] == "request-id"
+
+
+def test_request_id_factory_override() -> None:
+    """Allows deterministic request ids in tests."""
+    set_request_id_factory(lambda: "fixed-id")
+    try:
+        req = Request()
+        assert req.metadata["id"] == "fixed-id"
+    finally:
+        reset_request_id_factory()
 
 
 def test_failure_response_structure():

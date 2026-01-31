@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Type
+from typing import Any, Callable, Dict, Optional, Type
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -16,7 +16,7 @@ class Request(BaseModel):
 
         super().__init__(**data)
         if "id" not in self.metadata:
-            self.metadata["id"] = str(uuid4())
+            self.metadata["id"] = _REQUEST_ID_FACTORY()
 
 
 class Response(BaseModel):
@@ -50,3 +50,24 @@ class Response(BaseModel):
         """Return True if the response represents success."""
 
         return self.ok
+
+
+_REQUEST_ID_FACTORY: Callable[[], str] = lambda: str(uuid4())
+
+
+def set_request_id_factory(factory: Callable[[], str]) -> None:
+    """Override the request id factory for deterministic tests.
+
+    Args:
+        factory: Callable that returns a unique request id.
+    """
+
+    global _REQUEST_ID_FACTORY
+    _REQUEST_ID_FACTORY = factory
+
+
+def reset_request_id_factory() -> None:
+    """Reset the request id factory to the default UUID generator."""
+
+    global _REQUEST_ID_FACTORY
+    _REQUEST_ID_FACTORY = lambda: str(uuid4())

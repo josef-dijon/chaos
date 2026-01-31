@@ -61,7 +61,7 @@ Draft
 
 ### Dependency inversion & testability
 - [x] Make `src/chaos/stats/store_registry.py` default store lazy (no import-time Config/file I/O).
-- [ ] Add an injectable ID factory for request/response ids to make metadata tests deterministic.
+- [x] Add an injectable ID factory for request/response ids to make metadata tests deterministic.
 - [x] Add an injectable stats store dependency to `Block` to avoid patching globals in tests.
 - [ ] Add injectable registry/policy handler seams for recovery logic (or move orchestration out of domain layer).
 - [x] Make `LLMPrimitive` construction side-effect free (avoid default `Config.load()` / disk reads in `__init__`).
