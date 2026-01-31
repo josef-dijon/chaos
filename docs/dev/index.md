@@ -8,6 +8,7 @@ Guidance for working in this repository, including workflows, tooling, and stand
 - [LLM Primitive + Block Code Audit](llm-primitive-block-audit.md): Review findings and prioritized remediation recommendations.
 - [LLM Primitive Block](llm-primitive.md): User-facing guide to configuring and using the LLM Primitive block.
 - [LiteLLM + PostgreSQL Setup](litellm-postgresql-setup.md): Setup requirements for the LiteLLM proxy and PostgreSQL persistence.
+- [LLM Primitive Functional Test Plan](llm-primitive-functional-test-plan.md): End-to-end validation plan using the demo script.
 
 ## Roadmap
 - None yet.
