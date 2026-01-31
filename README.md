@@ -85,6 +85,14 @@ Detailed technical specifications can be found in the documentation index at [do
 uv sync
 ```
 
+`uv sync` uses `uv.lock` when present. After changing dependencies, run:
+
+```bash
+uv lock
+```
+
+Use `uv sync --frozen` to enforce the lockfile in CI or production workflows.
+
 ### Usage
 1. **Initialize a new Agent Identity:**
    ```bash

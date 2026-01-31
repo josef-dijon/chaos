@@ -1,7 +1,7 @@
 # LLM Primitive Review Remediation Checklist (2026-01-31)
 
 ## Status
-Draft
+In Progress
 
 ## Contents
 
@@ -26,7 +26,7 @@ Draft
 - [x] Add validator in `src/chaos/config.py` requiring `litellm_proxy_url` (and key if required) when `litellm_use_proxy` is true.
 - [x] Add tests in `tests/test_config.py` for env precedence over JSON.
 - [x] Add tests in `tests/test_config.py` for proxy-required-field validation.
-- [ ] Decide on reproducible dependency strategy and implement (upper bounds and/or `uv lock` workflow).
+- [x] Decide on reproducible dependency strategy and implement (upper bounds and/or `uv lock` workflow).
 
 ### Observability & metadata propagation
 - [x] Ensure every Request has `metadata["id"]` generated on creation.
@@ -90,7 +90,7 @@ Draft
 - [x] Add tests for proxy fail-closed behavior.
 - [x] Add tests for LLMService mapping boundaries and 401/403 auth mapping.
 - [x] Update test helpers to match real API shapes (e.g., ModelSettings access in FakeAgent).
-- [ ] Add docstrings to test functions/helpers to meet project standard.
+- [x] Add docstrings to test functions/helpers to meet project standard.
 - [x] Run `uv run pytest` and confirm coverage >= 95%.
 - [x] Ensure architecture docs remain the source of truth and match implementation after changes.
 
