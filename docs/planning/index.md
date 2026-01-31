@@ -6,8 +6,6 @@ Planning artifacts used to structure and track work across features and migratio
 ## In Progress
 - [Block Plan](block-plan.md)
 - [Block Checklist](block-checklist.md)
-- [LLM Primitive Review Remediation Plan](llm-primitive-review-remediation-plan.md)
-- [LLM Primitive Review Remediation Checklist](llm-primitive-review-remediation-checklist.md)
 - [Block Architecture Docs Expansion Plan](block-architecture-docs-expansion-plan.md)
 - [Block Architecture Docs Expansion Checklist](block-architecture-docs-expansion-checklist.md)
 - [Block Runtime Implementation Plan](block-runtime-implementation-plan.md)
@@ -46,6 +44,7 @@ Planning artifacts used to structure and track work across features and migratio
 - [VCR Fixtures Plan](vcr-fixtures-plan-complete.md)
 - [LLM Primitive Layered Plan](llm-primitive-layered-plan-complete.md)
 - [LLM Primitive + Block Audit Plan](llm-primitive-block-audit-plan-complete.md)
+- [LLM Primitive Review Remediation Plan](llm-primitive-review-remediation-plan-complete.md)
 - [PydanticAI Pre-Migration Stabilization Plan](pydanticai-pre-migration-plan-complete.md)
 
 ## Roadmap
