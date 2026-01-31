@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from chaos.domain.block_estimate import BlockEstimate
 from chaos.stats.block_attempt_record import BlockAttemptRecord
@@ -38,6 +38,8 @@ class JsonBlockStatsStore(BlockStatsStore):
         self._max_file_bytes = max(0, int(max_file_bytes))
         self._records = self._load()
         self._apply_retention()
+        self._index: Dict[Tuple[str, str, Optional[str]], List[BlockAttemptRecord]] = {}
+        self._rebuild_index()
 
     def record_attempt(self, record: BlockAttemptRecord) -> None:
         """Record a block execution attempt and persist to JSON.
@@ -48,6 +50,10 @@ class JsonBlockStatsStore(BlockStatsStore):
 
         self._records.append(record)
         trimmed = self._apply_retention()
+        if trimmed:
+            self._rebuild_index()
+        else:
+            self._add_to_index(record)
         self._append_record(record)
         if trimmed or self._should_compact():
             self._compact_records()
@@ -61,13 +67,7 @@ class JsonBlockStatsStore(BlockStatsStore):
             A BlockEstimate based on JSON records.
         """
 
-        relevant = [
-            record
-            for record in self._records
-            if record.block_name == identity.block_name
-            and record.block_type == identity.block_type
-            and record.version == identity.version
-        ]
+        relevant = self._index.get(self._identity_key(identity), [])
         prior = BlockEstimate.from_prior(identity)
         return build_estimate_from_records(identity, relevant, prior)
 
@@ -172,6 +172,19 @@ class JsonBlockStatsStore(BlockStatsStore):
                 records.append(record)
         return records
 
+    def _rebuild_index(self) -> None:
+        """Rebuild the in-memory index for quick lookups."""
+
+        self._index = {}
+        for record in self._records:
+            self._add_to_index(record)
+
+    def _add_to_index(self, record: BlockAttemptRecord) -> None:
+        """Add a record to the in-memory index."""
+
+        key = self._record_key(record)
+        self._index.setdefault(key, []).append(record)
+
     def _parse_payload(self, payload: List[object]) -> List[BlockAttemptRecord]:
         """Parse a JSON list payload into attempt records."""
 
@@ -193,6 +206,22 @@ class JsonBlockStatsStore(BlockStatsStore):
                 extra={"path": str(self._path)},
             )
             return None
+
+    @staticmethod
+    def _record_key(
+        record: BlockAttemptRecord,
+    ) -> Tuple[str, str, Optional[str]]:
+        """Build a dictionary key for a record."""
+
+        return (record.block_name, record.block_type, record.version)
+
+    @staticmethod
+    def _identity_key(
+        identity: BlockStatsIdentity,
+    ) -> Tuple[str, str, Optional[str]]:
+        """Build a dictionary key for an identity."""
+
+        return (identity.block_name, identity.block_type, identity.version)
 
     @staticmethod
     def _peek_first_non_whitespace(handle) -> Optional[str]:

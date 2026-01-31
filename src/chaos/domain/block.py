@@ -49,6 +49,9 @@ class Block(ABC):
         max_steps: int = 128,
         side_effect_class: SideEffectClass | str = SideEffectClass.NONE,
         stats_store: Optional[BlockStatsStore] = None,
+        condition_registry: type[ConditionRegistry] = ConditionRegistry,
+        repair_registry: type[RepairRegistry] = RepairRegistry,
+        policy_handler: type[PolicyHandler] = PolicyHandler,
     ):
         """Initialize a block.
 
@@ -61,6 +64,9 @@ class Block(ABC):
             side_effect_class: Side-effect classification for retry safety.
                 Allowed values: "none", "idempotent", "non_idempotent".
             stats_store: Optional stats store override for recording attempts.
+            condition_registry: Optional override for condition lookup.
+            repair_registry: Optional override for repair lookup.
+            policy_handler: Optional override for policy handling.
         """
         self._name = name
         self._state = BlockState.READY
@@ -70,6 +76,9 @@ class Block(ABC):
         self._max_steps = max_steps
         self._side_effect_class = self._normalize_side_effect_class(side_effect_class)
         self._stats_store = stats_store
+        self._condition_registry = condition_registry
+        self._repair_registry = repair_registry
+        self._policy_handler = policy_handler
         self._graph_validated = False
         self._graph_validation: Optional[Response] = None
 
@@ -268,7 +277,7 @@ class Block(ABC):
                     target = branch.get("target")
 
                     try:
-                        condition_func = ConditionRegistry.get(condition_name)
+                        condition_func = self._condition_registry.get(condition_name)
                     except ValueError as exc:
                         return Response(
                             success=False,
@@ -504,7 +513,7 @@ class Block(ABC):
             )
 
         try:
-            repair_func = RepairRegistry.get(policy.repair_function)
+            repair_func = self._repair_registry.get(policy.repair_function)
         except Exception as exc:
             return (
                 attempt,
@@ -550,7 +559,9 @@ class Block(ABC):
             Response returned by the policy handler.
         """
 
-        return PolicyHandler.handle(policy, node, last_child_request, current_failure)
+        return self._policy_handler.handle(
+            policy, node, last_child_request, current_failure
+        )
 
     def _validate_graph(self) -> Optional[Response]:
         """Validate composite graph configuration.
@@ -640,7 +651,7 @@ class Block(ABC):
                         return response
 
                     try:
-                        ConditionRegistry.get(condition_name)
+                        self._condition_registry.get(condition_name)
                     except ValueError as e:
                         response = Response(
                             success=False,

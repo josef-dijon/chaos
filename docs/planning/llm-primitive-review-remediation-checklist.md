@@ -55,7 +55,7 @@ In Progress
 - [x] Cache/reuse LLM clients/models in `src/chaos/llm/llm_service.py` to avoid per-request construction.
 - [x] Cache/reuse agents in `_run_agent` where safe.
 - [x] Replace `src/chaos/stats/json_block_stats_store.py` rewrite-per-attempt with append-only journaling or batched writes + rotation.
-- [ ] Add an index (by block identity) to make `estimate` faster than scanning all records.
+- [x] Add an index (by block identity) to make `estimate` faster than scanning all records.
 - [x] Add bounded retention to prevent unbounded in-memory record growth.
 - [ ] Optionally replace `mean_std` with a streaming algorithm if needed for large samples.
 
@@ -63,7 +63,7 @@ In Progress
 - [x] Make `src/chaos/stats/store_registry.py` default store lazy (no import-time Config/file I/O).
 - [x] Add an injectable ID factory for request/response ids to make metadata tests deterministic.
 - [x] Add an injectable stats store dependency to `Block` to avoid patching globals in tests.
-- [ ] Add injectable registry/policy handler seams for recovery logic (or move orchestration out of domain layer).
+- [x] Add injectable registry/policy handler seams for recovery logic (or move orchestration out of domain layer).
 - [x] Make `LLMPrimitive` construction side-effect free (avoid default `Config.load()` / disk reads in `__init__`).
 
 ### DRY, naming, and API cleanup
