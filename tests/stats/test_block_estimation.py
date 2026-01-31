@@ -1,5 +1,9 @@
 from chaos.domain.block import Block
-from chaos.domain.block_estimate import BlockEstimate
+from chaos.domain.block_estimate import (
+    BlockEstimate,
+    EstimateConfidence,
+    EstimateSource,
+)
 from chaos.domain.messages import Request, Response
 from chaos.stats.block_attempt_record import BlockAttemptRecord
 from chaos.stats.block_stats_identity import BlockStatsIdentity
@@ -29,7 +33,7 @@ def test_store_returns_prior_when_empty() -> None:
     estimate = store.estimate(identity)
 
     assert isinstance(estimate, BlockEstimate)
-    assert estimate.estimate_source == "prior"
+    assert estimate.estimate_source == EstimateSource.PRIOR
     assert estimate.sample_size == 0
 
 
@@ -62,7 +66,7 @@ def test_store_estimate_from_records() -> None:
     store.record_attempt(record)
     estimate = store.estimate(identity)
 
-    assert estimate.estimate_source == "stats"
+    assert estimate.estimate_source == EstimateSource.STATS
     assert estimate.sample_size == 1
     assert estimate.time_ms_mean == 123.0
     assert estimate.cost_usd_mean == 0.25
@@ -79,7 +83,7 @@ def test_block_execute_records_attempt() -> None:
     block.execute(Request(payload={"value": 1}))
     estimate = block.estimate_execution(Request(payload={"value": 1}))
 
-    assert estimate.estimate_source == "stats"
+    assert estimate.estimate_source == EstimateSource.STATS
     assert estimate.sample_size == 1
 
 
@@ -104,9 +108,9 @@ def test_mean_std_values() -> None:
 def test_confidence_from_sample_size() -> None:
     """Ensure confidence mapping aligns with thresholds."""
 
-    assert confidence_from_sample_size(0) == "low"
-    assert confidence_from_sample_size(5) == "medium"
-    assert confidence_from_sample_size(20) == "high"
+    assert confidence_from_sample_size(0) == EstimateConfidence.LOW
+    assert confidence_from_sample_size(5) == EstimateConfidence.MEDIUM
+    assert confidence_from_sample_size(20) == EstimateConfidence.HIGH
 
 
 def test_json_store_roundtrip(tmp_path) -> None:
@@ -142,5 +146,5 @@ def test_json_store_roundtrip(tmp_path) -> None:
     estimate = reloaded.estimate(identity)
 
     assert estimate.sample_size == 1
-    assert estimate.estimate_source == "stats"
+    assert estimate.estimate_source == EstimateSource.STATS
     assert estimate.expected_block_executions == 1.0

@@ -51,7 +51,7 @@ Draft
 
 ### Performance & scalability
 - [x] Cache graph validation on build/setup and skip per-execution validation.
-- [ ] Reduce deep-copy usage for Requests and terminal Responses (prefer shallow copies + metadata-only updates).
+- [x] Reduce deep-copy usage for Requests and terminal Responses (prefer shallow copies + metadata-only updates).
 - [ ] Cache/reuse LLM clients/models in `src/chaos/llm/llm_service.py` to avoid per-request construction.
 - [ ] Cache/reuse agents in `_run_agent` where safe.
 - [ ] Replace `src/chaos/stats/json_block_stats_store.py` rewrite-per-attempt with append-only journaling or batched writes + rotation.
@@ -75,9 +75,9 @@ Draft
 - [x] Remove duplicated sources of truth for attempt/execution ids (single authoritative location).
 - [x] Standardize on a single Response success field name (`success`) and remove aliasing (`ok`).
 - [x] Fix `_run_agent` system prompt typing and stop passing `()` for missing prompts.
-- [ ] Remove or implement request-aware estimation; if removing, update `src/chaos/stats/estimate_builder.py` signatures/docs and tests.
+- [x] Remove or implement request-aware estimation; if removing, update `src/chaos/stats/estimate_builder.py` signatures/docs and tests.
 - [ ] Replace free-form `side_effect_class` with an enum or Literal, validate at construction.
-- [ ] Replace free-form estimate source/confidence strings with enums or Literals.
+- [x] Replace free-form estimate source/confidence strings with enums or Literals.
 - [ ] Centralize schema error mapping logic in `src/chaos/llm/llm_error_mapper.py` to avoid duplicated branches.
 - [ ] Define and document composite metadata keys (`source`, `composite`, `last_node`) via constants/schema.
 
@@ -89,9 +89,9 @@ Draft
 - [x] Add tests for error sanitization (no sensitive strings in responses).
 - [x] Add tests for proxy fail-closed behavior.
 - [x] Add tests for LLMService mapping boundaries and 401/403 auth mapping.
-- [ ] Update test helpers to match real API shapes (e.g., ModelSettings access in FakeAgent).
+- [x] Update test helpers to match real API shapes (e.g., ModelSettings access in FakeAgent).
 - [ ] Add docstrings to test functions/helpers to meet project standard.
-- [ ] Run `uv run pytest` and confirm coverage >= 95%.
+- [x] Run `uv run pytest` and confirm coverage >= 95%.
 - [ ] Ensure architecture docs remain the source of truth and match implementation after changes.
 
 ## References

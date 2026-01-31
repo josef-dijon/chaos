@@ -165,7 +165,12 @@ def test_llm_service_run_agent_happy_path(monkeypatch: pytest.MonkeyPatch) -> No
 
         def run_sync(self, user_prompt, model_settings):
             assert user_prompt == "hello"
-            assert model_settings["temperature"] == 0.0
+            temperature = (
+                model_settings["temperature"]
+                if isinstance(model_settings, dict)
+                else model_settings.temperature
+            )
+            assert temperature == 0.0
             return FakeResult(self._output_type(response="ok"))
 
     monkeypatch.setattr("chaos.llm.llm_service.Agent", FakeAgent)

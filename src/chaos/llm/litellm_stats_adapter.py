@@ -1,4 +1,4 @@
-from chaos.domain.block_estimate import BlockEstimate
+from chaos.domain.block_estimate import BlockEstimate, EstimateSource
 from chaos.stats.block_stats_identity import BlockStatsIdentity
 from chaos.stats.block_stats_store import BlockStatsStore
 
@@ -31,6 +31,9 @@ class LiteLLMStatsAdapter:
         """
 
         estimate = self._store.estimate(identity)
-        if estimate.estimate_source == "prior" or estimate.sample_size == 0:
+        if (
+            estimate.estimate_source == EstimateSource.PRIOR
+            or estimate.sample_size == 0
+        ):
             return prior
         return estimate

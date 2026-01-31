@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from chaos.domain.block_estimate import EstimateSource
 from chaos.stats.block_attempt_record import BlockAttemptRecord
 from chaos.stats.block_stats_identity import BlockStatsIdentity
 from chaos.stats.json_block_stats_store import JsonBlockStatsStore
@@ -49,7 +50,7 @@ def test_json_store_load_invalid_json(tmp_path: Path) -> None:
     estimate = store.estimate(_build_identity())
 
     assert estimate.sample_size == 0
-    assert estimate.estimate_source == "prior"
+    assert estimate.estimate_source == EstimateSource.PRIOR
 
 
 def test_json_store_load_invalid_format(tmp_path: Path) -> None:
@@ -61,7 +62,7 @@ def test_json_store_load_invalid_format(tmp_path: Path) -> None:
     estimate = store.estimate(_build_identity())
 
     assert estimate.sample_size == 0
-    assert estimate.estimate_source == "prior"
+    assert estimate.estimate_source == EstimateSource.PRIOR
 
 
 def test_json_store_skips_invalid_records_and_retains_latest(tmp_path: Path) -> None:

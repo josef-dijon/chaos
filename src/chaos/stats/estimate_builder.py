@@ -3,6 +3,7 @@ from typing import Iterable, List
 from chaos.domain.block_estimate import BlockEstimate
 from chaos.stats.block_attempt_record import BlockAttemptRecord
 from chaos.stats.block_stats_identity import BlockStatsIdentity
+from chaos.domain.block_estimate import EstimateSource
 from chaos.stats.statistics import confidence_from_sample_size, mean_std
 
 
@@ -57,7 +58,7 @@ def build_estimate_from_records(
         block_name=identity.block_name,
         block_type=identity.block_type,
         version=identity.version,
-        estimate_source="stats",
+        estimate_source=EstimateSource.STATS,
         confidence=confidence_from_sample_size(sample_size),
         sample_size=sample_size,
         time_ms_mean=time_mean,

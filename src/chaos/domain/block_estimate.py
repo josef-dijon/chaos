@@ -1,8 +1,26 @@
+from enum import Enum
 from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from chaos.stats.block_stats_identity import BlockStatsIdentity
+
+
+class EstimateSource(str, Enum):
+    """Allowed sources for block estimates."""
+
+    STATS = "stats"
+    PRIOR = "prior"
+    HEURISTIC = "heuristic"
+    UNKNOWN = "unknown"
+
+
+class EstimateConfidence(str, Enum):
+    """Allowed confidence levels for block estimates."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
 
 
 class BlockEstimate(BaseModel):
@@ -11,10 +29,12 @@ class BlockEstimate(BaseModel):
     block_name: str = Field(description="Stable block instance name.")
     block_type: str = Field(description="Stable block type identifier.")
     version: Optional[str] = Field(default=None, description="Optional block version.")
-    estimate_source: str = Field(
+    estimate_source: EstimateSource = Field(
         description="Source of the estimate: stats, prior, heuristic, or unknown."
     )
-    confidence: str = Field(description="Confidence level: low, medium, or high.")
+    confidence: EstimateConfidence = Field(
+        description="Confidence level: low, medium, or high."
+    )
     sample_size: int = Field(description="Number of samples used for the estimate.")
     time_ms_mean: float = Field(description="Mean estimated duration in milliseconds.")
     time_ms_std: float = Field(
@@ -71,8 +91,8 @@ class BlockEstimate(BaseModel):
             block_name=identity.block_name,
             block_type=identity.block_type,
             version=identity.version,
-            estimate_source="prior",
-            confidence="low",
+            estimate_source=EstimateSource.PRIOR,
+            confidence=EstimateConfidence.LOW,
             sample_size=0,
             time_ms_mean=time_ms_mean,
             time_ms_std=time_ms_std,

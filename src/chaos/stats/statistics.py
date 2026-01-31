@@ -1,6 +1,8 @@
 from math import sqrt
 from typing import Iterable, Tuple
 
+from chaos.domain.block_estimate import EstimateConfidence
+
 
 def mean_std(values: Iterable[float]) -> Tuple[float, float]:
     """Compute mean and population standard deviation.
@@ -22,18 +24,18 @@ def mean_std(values: Iterable[float]) -> Tuple[float, float]:
     return mean_value, sqrt(variance)
 
 
-def confidence_from_sample_size(sample_size: int) -> str:
+def confidence_from_sample_size(sample_size: int) -> EstimateConfidence:
     """Return a confidence label based on sample size.
 
     Args:
         sample_size: Number of samples.
 
     Returns:
-        Confidence label string.
+        Confidence label.
     """
 
     if sample_size >= 20:
-        return "high"
+        return EstimateConfidence.HIGH
     if sample_size >= 5:
-        return "medium"
-    return "low"
+        return EstimateConfidence.MEDIUM
+    return EstimateConfidence.LOW

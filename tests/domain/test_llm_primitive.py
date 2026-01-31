@@ -6,6 +6,7 @@ import pytest
 from pydantic import BaseModel, SecretStr
 
 from chaos.config import Config
+from chaos.domain.block_estimate import EstimateSource
 from chaos.domain.exceptions import (
     ApiKeyError,
     ContextLengthError,
@@ -264,7 +265,7 @@ def test_llm_primitive_estimate_execution_prior() -> None:
 
     estimate = block.estimate_execution(Request(payload={"prompt": "hello"}))
 
-    assert estimate.estimate_source == "prior"
+    assert estimate.estimate_source == EstimateSource.PRIOR
     assert estimate.sample_size == 0
     assert estimate.expected_llm_calls == 1.0
     assert estimate.block_type == "llm_primitive"
@@ -286,7 +287,7 @@ def test_llm_primitive_estimate_execution_from_stats() -> None:
     block.execute(Request(payload={"prompt": "hello"}))
     estimate = block.estimate_execution(Request(payload={"prompt": "hello"}))
 
-    assert estimate.estimate_source == "stats"
+    assert estimate.estimate_source == EstimateSource.STATS
     assert estimate.sample_size == 1
     assert estimate.expected_llm_calls == 1.0
 
