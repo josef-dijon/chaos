@@ -78,7 +78,7 @@ Draft
 - [x] Remove or implement request-aware estimation; if removing, update `src/chaos/stats/estimate_builder.py` signatures/docs and tests.
 - [x] Replace free-form `side_effect_class` with an enum or Literal, validate at construction.
 - [x] Replace free-form estimate source/confidence strings with enums or Literals.
-- [ ] Centralize schema error mapping logic in `src/chaos/llm/llm_error_mapper.py` to avoid duplicated branches.
+- [x] Centralize schema error mapping logic in `src/chaos/llm/llm_error_mapper.py` to avoid duplicated branches.
 - [ ] Define and document composite metadata keys (`source`, `composite`, `last_node`) via constants/schema.
 
 ### Tests, docs, and verification

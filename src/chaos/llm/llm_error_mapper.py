@@ -6,6 +6,7 @@ try:
 except ImportError:  # pragma: no cover
     httpx = None
 
+
 try:
     from pydantic import ValidationError
 except ImportError:  # pragma: no cover
@@ -52,25 +53,8 @@ def map_llm_error(error: Exception) -> LLMErrorMapping:
     details: Dict[str, Any] = build_exception_details(error)
     cause = getattr(error, "__cause__", None)
 
-    if ValidationError is not None and isinstance(error, ValidationError):
-        return LLMErrorMapping(
-            status=ResponseStatus.SEMANTIC_ERROR,
-            reason="schema_error",
-            error_type=SchemaError,
-            details=details,
-        )
-    if (
-        UnexpectedModelBehavior is not None
-        and isinstance(error, UnexpectedModelBehavior)
-        and ValidationError is not None
-        and isinstance(cause, ValidationError)
-    ):
-        return LLMErrorMapping(
-            status=ResponseStatus.SEMANTIC_ERROR,
-            reason="schema_error",
-            error_type=SchemaError,
-            details=details,
-        )
+    if _is_schema_error(error, cause):
+        return _schema_error_mapping(details)
 
     if httpx is not None and isinstance(error, httpx.HTTPStatusError):
         status_code = error.response.status_code
@@ -96,13 +80,6 @@ def map_llm_error(error: Exception) -> LLMErrorMapping:
                 error_type=ContextLengthError,
                 details=details,
             )
-    if isinstance(error, SchemaError):
-        return LLMErrorMapping(
-            status=ResponseStatus.SEMANTIC_ERROR,
-            reason="schema_error",
-            error_type=SchemaError,
-            details=details,
-        )
     if isinstance(error, RateLimitError):
         return LLMErrorMapping(
             status=ResponseStatus.MECHANICAL_ERROR,
@@ -128,22 +105,6 @@ def map_llm_error(error: Exception) -> LLMErrorMapping:
     error_name = error.__class__.__name__.lower()
     error_message = str(error).lower()
 
-    if (
-        UnexpectedModelBehavior is not None
-        and isinstance(error, UnexpectedModelBehavior)
-        and (
-            "validation" in error_message
-            or "schema" in error_message
-            or "json" in error_message
-            or "output" in error_message
-        )
-    ):
-        return LLMErrorMapping(
-            status=ResponseStatus.SEMANTIC_ERROR,
-            reason="schema_error",
-            error_type=SchemaError,
-            details=details,
-        )
     if (
         "ratelimit" in error_name
         or "rate limit" in error_message
@@ -179,14 +140,7 @@ def is_known_llm_error(error: Exception) -> bool:
     """Return True for errors that should be mapped as LLM failures."""
 
     cause = getattr(error, "__cause__", None)
-    if ValidationError is not None and isinstance(error, ValidationError):
-        return True
-    if (
-        UnexpectedModelBehavior is not None
-        and isinstance(error, UnexpectedModelBehavior)
-        and ValidationError is not None
-        and isinstance(cause, ValidationError)
-    ):
+    if _is_schema_error(error, cause):
         return True
     if httpx is not None and isinstance(error, httpx.HTTPStatusError):
         return True
@@ -197,7 +151,41 @@ def is_known_llm_error(error: Exception) -> bool:
     )
 
 
-def _extract_error_payload(error: "httpx.HTTPStatusError") -> Dict[str, Any]:
+def _schema_error_mapping(details: Dict[str, Any]) -> LLMErrorMapping:
+    """Build a schema error mapping with standard fields."""
+
+    return LLMErrorMapping(
+        status=ResponseStatus.SEMANTIC_ERROR,
+        reason="schema_error",
+        error_type=SchemaError,
+        details=details,
+    )
+
+
+def _is_schema_error(error: Exception, cause: Optional[Exception]) -> bool:
+    """Return True when the error represents a schema/validation failure."""
+
+    if isinstance(error, SchemaError):
+        return True
+    if ValidationError is not None and isinstance(error, ValidationError):
+        return True
+    if UnexpectedModelBehavior is not None and isinstance(
+        error, UnexpectedModelBehavior
+    ):
+        if ValidationError is not None and isinstance(cause, ValidationError):
+            return True
+        error_message = str(error).lower()
+        if (
+            "validation" in error_message
+            or "schema" in error_message
+            or "json" in error_message
+            or "output" in error_message
+        ):
+            return True
+    return False
+
+
+def _extract_error_payload(error: Any) -> Dict[str, Any]:
     """Extract error payload from an HTTP status error."""
 
     try:
