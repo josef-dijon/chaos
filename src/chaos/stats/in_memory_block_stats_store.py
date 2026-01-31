@@ -1,7 +1,6 @@
 from typing import List
 
 from chaos.domain.block_estimate import BlockEstimate
-from chaos.domain.messages import Request
 from chaos.stats.block_attempt_record import BlockAttemptRecord
 from chaos.stats.block_stats_identity import BlockStatsIdentity
 from chaos.stats.block_stats_store import BlockStatsStore
@@ -25,13 +24,11 @@ class InMemoryBlockStatsStore(BlockStatsStore):
 
         self._records.append(record)
 
-    def estimate(self, identity: BlockStatsIdentity, request: Request) -> BlockEstimate:
+    def estimate(self, identity: BlockStatsIdentity) -> BlockEstimate:
         """Estimate execution cost/latency using stored attempts.
 
         Args:
             identity: Stable block identity metadata.
-            request: Request to be estimated.
-
         Returns:
             A BlockEstimate based on in-memory records.
         """
@@ -44,4 +41,4 @@ class InMemoryBlockStatsStore(BlockStatsStore):
             and record.version == identity.version
         ]
         prior = BlockEstimate.from_prior(identity)
-        return build_estimate_from_records(identity, request, relevant, prior)
+        return build_estimate_from_records(identity, relevant, prior)

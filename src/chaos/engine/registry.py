@@ -50,7 +50,8 @@ def add_validation_feedback(request: Request, failure: Response) -> Request:
         A new Request with the prompt updated to include validation feedback.
     """
 
-    cloned = request.model_copy(deep=True)
+    cloned = request.model_copy(deep=False)
+    cloned.metadata = dict(request.metadata)
 
     payload = dict(cloned.payload or {})
     existing_prompt = ""

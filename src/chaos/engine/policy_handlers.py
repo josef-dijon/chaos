@@ -57,7 +57,7 @@ class PolicyHandler:
         try:
             repair_func = RepairRegistry.get(policy.repair_function)
             repaired_request = repair_func(request, failure)
-            merged = repaired_request.model_copy(deep=True)
+            merged = repaired_request.model_copy(deep=False)
             merged.metadata = {
                 **dict(request.metadata or {}),
                 **dict(repaired_request.metadata or {}),

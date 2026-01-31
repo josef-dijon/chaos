@@ -26,7 +26,7 @@ def test_store_returns_prior_when_empty() -> None:
 
     store = InMemoryBlockStatsStore()
     identity = BlockStatsIdentity(block_name="block", block_type="test", version=None)
-    estimate = store.estimate(identity, Request())
+    estimate = store.estimate(identity)
 
     assert isinstance(estimate, BlockEstimate)
     assert estimate.estimate_source == "prior"
@@ -60,7 +60,7 @@ def test_store_estimate_from_records() -> None:
         block_executions=1,
     )
     store.record_attempt(record)
-    estimate = store.estimate(identity, Request())
+    estimate = store.estimate(identity)
 
     assert estimate.estimate_source == "stats"
     assert estimate.sample_size == 1
@@ -139,7 +139,7 @@ def test_json_store_roundtrip(tmp_path) -> None:
     store.record_attempt(record)
 
     reloaded = JsonBlockStatsStore(path)
-    estimate = reloaded.estimate(identity, Request())
+    estimate = reloaded.estimate(identity)
 
     assert estimate.sample_size == 1
     assert estimate.estimate_source == "stats"

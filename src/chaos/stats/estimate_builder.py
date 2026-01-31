@@ -1,7 +1,6 @@
 from typing import Iterable, List
 
 from chaos.domain.block_estimate import BlockEstimate
-from chaos.domain.messages import Request
 from chaos.stats.block_attempt_record import BlockAttemptRecord
 from chaos.stats.block_stats_identity import BlockStatsIdentity
 from chaos.stats.statistics import confidence_from_sample_size, mean_std
@@ -9,7 +8,6 @@ from chaos.stats.statistics import confidence_from_sample_size, mean_std
 
 def build_estimate_from_records(
     identity: BlockStatsIdentity,
-    request: Request,
     records: Iterable[BlockAttemptRecord],
     prior: BlockEstimate,
 ) -> BlockEstimate:
@@ -17,7 +15,6 @@ def build_estimate_from_records(
 
     Args:
         identity: Stable block identity metadata.
-        request: Request to estimate.
         records: Attempt records for the block.
         prior: Prior estimate used when data is missing.
 
@@ -25,7 +22,6 @@ def build_estimate_from_records(
         A BlockEstimate built from records with fallbacks to priors.
     """
 
-    del request
     record_list: List[BlockAttemptRecord] = list(records)
     sample_size = len(record_list)
     if sample_size == 0:

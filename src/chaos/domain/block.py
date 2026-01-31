@@ -201,7 +201,8 @@ class Block(ABC):
         """
 
         identity = self.stats_identity()
-        return get_default_store().estimate(identity, request)
+        store = self._stats_store or get_default_store()
+        return store.estimate(identity)
 
     def _execute_graph(self, request: Request) -> Response:
         """Execute the graph of child nodes."""
@@ -739,7 +740,8 @@ class Block(ABC):
         This method does not mutate the input request.
         """
 
-        cloned = request.model_copy(deep=True)
+        cloned = request.model_copy(deep=False)
+        cloned.metadata = dict(request.metadata)
         md = cloned.metadata
 
         md.setdefault("id", str(uuid4()))
@@ -786,10 +788,16 @@ class Block(ABC):
         This method does not mutate the input request.
         """
 
-        cloned = parent_request.model_copy(deep=True)
-        if source_request is not None:
-            cloned.payload = source_request.payload
-            cloned.context = source_request.context
+        cloned = parent_request.model_copy(deep=False)
+        cloned.metadata = dict(parent_request.metadata)
+        payload_source = (
+            source_request.payload if source_request else parent_request.payload
+        )
+        context_source = (
+            source_request.context if source_request else parent_request.context
+        )
+        cloned.payload = dict(payload_source)
+        cloned.context = dict(context_source)
         md = cloned.metadata
 
         md["id"] = str(uuid4())

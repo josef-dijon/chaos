@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 
 from chaos.domain.block_estimate import BlockEstimate
-from chaos.domain.messages import Request
 from chaos.stats.block_attempt_record import BlockAttemptRecord
 from chaos.stats.block_stats_identity import BlockStatsIdentity
 
@@ -18,13 +17,11 @@ class BlockStatsStore(ABC):
         """
 
     @abstractmethod
-    def estimate(self, identity: BlockStatsIdentity, request: Request) -> BlockEstimate:
+    def estimate(self, identity: BlockStatsIdentity) -> BlockEstimate:
         """Estimate execution cost/latency for a block.
 
         Args:
             identity: Stable block identity metadata.
-            request: Request to be estimated.
-
         Returns:
             A BlockEstimate for the given request.
         """

@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import List
 
 from chaos.domain.block_estimate import BlockEstimate
-from chaos.domain.messages import Request
 from chaos.stats.block_attempt_record import BlockAttemptRecord
 from chaos.stats.block_stats_identity import BlockStatsIdentity
 from chaos.stats.block_stats_store import BlockStatsStore
@@ -43,13 +42,11 @@ class JsonBlockStatsStore(BlockStatsStore):
         self._apply_retention()
         self._save()
 
-    def estimate(self, identity: BlockStatsIdentity, request: Request) -> BlockEstimate:
+    def estimate(self, identity: BlockStatsIdentity) -> BlockEstimate:
         """Estimate execution cost/latency using stored attempts.
 
         Args:
             identity: Stable block identity metadata.
-            request: Request to be estimated.
-
         Returns:
             A BlockEstimate based on JSON records.
         """
@@ -62,7 +59,7 @@ class JsonBlockStatsStore(BlockStatsStore):
             and record.version == identity.version
         ]
         prior = BlockEstimate.from_prior(identity)
-        return build_estimate_from_records(identity, request, relevant, prior)
+        return build_estimate_from_records(identity, relevant, prior)
 
     def _load(self) -> List[BlockAttemptRecord]:
         """Load attempt records from disk.

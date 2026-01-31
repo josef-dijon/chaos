@@ -140,7 +140,7 @@ class LLMPrimitive(Block):
             self._stats_adapter = LiteLLMStatsAdapter(get_default_store())
         identity = self.stats_identity()
         prior = self._build_prior_estimate(identity, request)
-        return self._stats_adapter.estimate(identity, request, prior)
+        return self._stats_adapter.estimate(identity, prior)
 
     def _build_attempt_record(
         self, request: Request, response: Response, duration_ms: float
