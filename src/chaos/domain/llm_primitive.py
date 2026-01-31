@@ -60,14 +60,14 @@ class LLMPrimitive(Block):
             model_selector: Optional model selector override.
             output_retries: Number of PydanticAI output validation retries.
         """
-        self._config = config or Config.load()
+        self._config = config or Config()
         resolved_model = model or self._config.get_model_name()
         super().__init__(name, side_effect_class="idempotent")
         self._system_prompt = system_prompt
         self._output_data_model = output_data_model
         self._model = resolved_model
         self._temperature = temperature
-        self._stats_adapter = stats_adapter or LiteLLMStatsAdapter(get_default_store())
+        self._stats_adapter = stats_adapter
         self._llm_service: LLMExecutor = llm_service or LLMService(
             output_retries=output_retries
         )
@@ -136,7 +136,8 @@ class LLMPrimitive(Block):
 
     def estimate_execution(self, request: Request) -> BlockEstimate:
         """Return a side-effect-free estimate for this block."""
-
+        if self._stats_adapter is None:
+            self._stats_adapter = LiteLLMStatsAdapter(get_default_store())
         identity = self.stats_identity()
         prior = self._build_prior_estimate(identity, request)
         return self._stats_adapter.estimate(identity, request, prior)

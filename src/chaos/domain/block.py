@@ -19,6 +19,7 @@ from chaos.engine.conditions import ConditionRegistry
 from chaos.engine.policy_handlers import PolicyHandler
 from chaos.engine.registry import RepairRegistry
 from chaos.stats.block_attempt_record import BlockAttemptRecord
+from chaos.stats.block_stats_store import BlockStatsStore
 from chaos.stats.block_stats_identity import BlockStatsIdentity
 from chaos.stats.store_registry import get_default_store
 
@@ -41,6 +42,7 @@ class Block(ABC):
         transitions: Optional[Dict[str, Any]] = None,
         max_steps: int = 128,
         side_effect_class: str = "none",
+        stats_store: Optional[BlockStatsStore] = None,
     ):
         """Initialize a block.
 
@@ -52,6 +54,7 @@ class Block(ABC):
             max_steps: Maximum number of graph steps allowed for a composite execution.
             side_effect_class: Side-effect classification for retry safety.
                 Allowed values: "none", "idempotent", "non_idempotent".
+            stats_store: Optional stats store override for recording attempts.
         """
         self._name = name
         self._state = BlockState.READY
@@ -60,6 +63,9 @@ class Block(ABC):
         self._transitions = transitions or {}
         self._max_steps = max_steps
         self._side_effect_class = self._normalize_side_effect_class(side_effect_class)
+        self._stats_store = stats_store
+        self._graph_validated = False
+        self._graph_validation: Optional[Response] = None
 
         # Allow subclasses to configure the graph
         self.build()
@@ -89,6 +95,8 @@ class Block(ABC):
         self._nodes = nodes
         self._entry_point = entry_point
         self._transitions = transitions or {}
+        self._graph_validated = False
+        self._graph_validation = None
 
     @property
     def name(self) -> str:
@@ -292,7 +300,7 @@ class Block(ABC):
                 # Optional: Update metadata to trace path
             else:
                 # Terminal state
-                final = response.model_copy(deep=True)
+                final = response.model_copy(deep=False)
                 final.metadata = {
                     **dict(final.metadata or {}),
                     "source": node.name,
@@ -444,35 +452,47 @@ class Block(ABC):
             Failed Response if invalid, otherwise None.
         """
 
+        if self._graph_validated:
+            return self._graph_validation
+
         nodes = self._nodes or {}
         if not self._entry_point:
-            return Response(
+            response = Response(
                 success=False,
                 reason="invalid_graph",
                 details={"error": "Graph block missing entry_point"},
                 error_type=Exception,
             )
+            self._graph_validated = True
+            self._graph_validation = response
+            return response
 
         if self._entry_point not in nodes:
-            return Response(
+            response = Response(
                 success=False,
                 reason="invalid_graph",
                 details={"error": f"entry_point '{self._entry_point}' not found"},
                 error_type=Exception,
             )
+            self._graph_validated = True
+            self._graph_validation = response
+            return response
 
         for from_node, transition in (self._transitions or {}).items():
             if from_node not in nodes:
-                return Response(
+                response = Response(
                     success=False,
                     reason="invalid_graph",
                     details={"error": f"transition from unknown node '{from_node}'"},
                     error_type=Exception,
                 )
+                self._graph_validated = True
+                self._graph_validation = response
+                return response
 
             if isinstance(transition, str):
                 if transition not in nodes:
-                    return Response(
+                    response = Response(
                         success=False,
                         reason="invalid_graph",
                         details={
@@ -480,6 +500,9 @@ class Block(ABC):
                         },
                         error_type=Exception,
                     )
+                    self._graph_validated = True
+                    self._graph_validation = response
+                    return response
                 continue
 
             if isinstance(transition, list):
@@ -487,14 +510,17 @@ class Block(ABC):
                     condition_name = branch.get("condition", "default")
                     target = branch.get("target")
                     if not target:
-                        return Response(
+                        response = Response(
                             success=False,
                             reason="invalid_graph",
                             details={"error": f"missing target for node '{from_node}'"},
                             error_type=Exception,
                         )
+                        self._graph_validated = True
+                        self._graph_validation = response
+                        return response
                     if target not in nodes:
-                        return Response(
+                        response = Response(
                             success=False,
                             reason="invalid_graph",
                             details={
@@ -502,25 +528,36 @@ class Block(ABC):
                             },
                             error_type=Exception,
                         )
+                        self._graph_validated = True
+                        self._graph_validation = response
+                        return response
 
                     try:
                         ConditionRegistry.get(condition_name)
                     except ValueError as e:
-                        return Response(
+                        response = Response(
                             success=False,
                             reason="condition_resolution_error",
                             details={"error": str(e), "condition": condition_name},
                             error_type=Exception,
                         )
+                        self._graph_validated = True
+                        self._graph_validation = response
+                        return response
                 continue
 
-            return Response(
+            response = Response(
                 success=False,
                 reason="invalid_graph",
                 details={"error": f"invalid transition config for '{from_node}'"},
                 error_type=Exception,
             )
+            self._graph_validated = True
+            self._graph_validation = response
+            return response
 
+        self._graph_validated = True
+        self._graph_validation = None
         return None
 
     def stats_identity(self) -> BlockStatsIdentity:
@@ -577,7 +614,8 @@ class Block(ABC):
 
         record = self._build_attempt_record(request, response, duration_ms)
         try:
-            get_default_store().record_attempt(record)
+            store = self._stats_store or get_default_store()
+            store.record_attempt(record)
         except Exception as exc:
             metadata = request.metadata
             logger.exception(
