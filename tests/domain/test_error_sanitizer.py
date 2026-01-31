@@ -60,3 +60,30 @@ def test_build_exception_details_includes_cause() -> None:
     assert "outer error" in details.get("message", "")
     assert details["cause_class"] == "ValueError"
     assert "inner error" in details.get("cause_message", "")
+
+
+def test_sanitize_error_details_depth_limit() -> None:
+    """Depth limits return redacted values."""
+    sanitized = sanitize_error_details({"nested": {"value": "secret"}}, max_depth=0)
+
+    assert sanitized == REDACTED_VALUE
+
+
+def test_sanitize_error_details_truncates_map() -> None:
+    """Map truncation adds a marker key."""
+    sanitized = sanitize_error_details({"a": 1, "b": 2}, max_items=1)
+
+    assert sanitized["a"] == 1
+    assert sanitized["_truncated"] is True
+
+
+def test_sanitize_error_details_custom_value() -> None:
+    """Custom values are stringified and sanitized."""
+
+    class Custom:
+        def __str__(self) -> str:
+            return "custom-value"
+
+    sanitized = sanitize_error_details({"value": Custom()})
+
+    assert sanitized["value"] == "custom-value"

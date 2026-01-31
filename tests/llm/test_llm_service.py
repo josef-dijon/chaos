@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretStr
 
 from chaos.domain.exceptions import RateLimitError, SchemaError
 from chaos.llm.llm_error_mapper import map_llm_error
@@ -128,6 +128,21 @@ def test_llm_service_render_prompts_multiturn() -> None:
     assert "User: u2" in user_prompt
 
 
+def test_llm_service_render_prompts_ignores_empty_content() -> None:
+    service = LLMService()
+
+    system_prompt, user_prompt = service._render_prompts(
+        [
+            {"role": "system", "content": "sys"},
+            {"role": "user", "content": ""},
+            {"role": "assistant", "content": "a1"},
+        ]
+    )
+
+    assert system_prompt == "sys"
+    assert user_prompt == "Assistant: a1"
+
+
 def test_llm_service_run_agent_happy_path(monkeypatch: pytest.MonkeyPatch) -> None:
     service = LLMService()
 
@@ -165,6 +180,35 @@ def test_llm_service_run_agent_happy_path(monkeypatch: pytest.MonkeyPatch) -> No
 
     assert data == {"response": "ok"}
     assert usage == {"requests": 2, "input_tokens": 3, "output_tokens": 5}
+
+
+def test_llm_service_run_agent_unexpected_output(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service = LLMService()
+
+    class FakeResult:
+        output = ["unexpected"]
+
+        def usage(self):
+            return type("Usage", (), {})()
+
+    class FakeAgent:
+        def __init__(self, model, system_prompt, output_type, output_retries):
+            pass
+
+        def run_sync(self, user_prompt, model_settings):
+            return FakeResult()
+
+    monkeypatch.setattr("chaos.llm.llm_service.Agent", FakeAgent)
+    monkeypatch.setattr(
+        "chaos.llm.llm_service.OpenAIChatModel", lambda *a, **k: object()
+    )
+
+    with pytest.raises(TypeError):
+        service._run_agent(
+            request=_build_request(), system_prompt="sys", user_prompt="hello"
+        )
 
 
 def test_llm_error_mapper_http_status_error_429() -> None:
@@ -208,6 +252,12 @@ def test_llm_service_build_model_uses_model_builder() -> None:
     model = service._build_model(_build_request())
 
     assert model is sentinel
+
+
+def test_llm_service_resolve_api_key() -> None:
+    assert LLMService._resolve_api_key(SecretStr("secret")) == "secret"
+    assert LLMService._resolve_api_key("plain") == "plain"
+    assert LLMService._resolve_api_key(123) == "123"
 
 
 def test_llm_service_build_model_api_base_branch(

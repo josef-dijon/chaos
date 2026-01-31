@@ -1,3 +1,5 @@
+from typing import Any, Dict, cast
+
 from chaos.domain.block import Block
 from chaos.domain.messages import Request, Response
 from chaos.domain.policy import BubblePolicy, RecoveryType
@@ -37,6 +39,22 @@ def test_request_response_flow():
     assert resp.metadata["id"] is not None
 
 
+def test_request_generates_id():
+    req = Request()
+
+    assert req.metadata["id"]
+
+
+def test_request_preserves_id_across_execute():
+    block = MetadataEchoBlock(name="meta")
+    req = Request(metadata={"id": "request-id"})
+
+    resp = block.execute(req)
+
+    assert req.metadata["id"] == "request-id"
+    assert resp.metadata["id"] == "request-id"
+
+
 def test_failure_response_structure():
     fail = Response(success=False, reason="Something went wrong", details={"code": 500})
     assert fail.reason == "Something went wrong"
@@ -50,7 +68,8 @@ def test_base_metadata_is_populated_on_request():
     resp = block.execute(Request())
 
     assert resp.success() is True
-    metadata = resp.data
+    assert isinstance(resp.data, dict)
+    metadata = cast(Dict[str, Any], resp.data)
     assert metadata["trace_id"]
     assert metadata["run_id"]
     assert metadata["span_id"]
