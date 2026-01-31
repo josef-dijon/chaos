@@ -76,7 +76,7 @@ Draft
 - [x] Standardize on a single Response success field name (`success`) and remove aliasing (`ok`).
 - [x] Fix `_run_agent` system prompt typing and stop passing `()` for missing prompts.
 - [x] Remove or implement request-aware estimation; if removing, update `src/chaos/stats/estimate_builder.py` signatures/docs and tests.
-- [ ] Replace free-form `side_effect_class` with an enum or Literal, validate at construction.
+- [x] Replace free-form `side_effect_class` with an enum or Literal, validate at construction.
 - [x] Replace free-form estimate source/confidence strings with enums or Literals.
 - [ ] Centralize schema error mapping logic in `src/chaos/llm/llm_error_mapper.py` to avoid duplicated branches.
 - [ ] Define and document composite metadata keys (`source`, `composite`, `last_node`) via constants/schema.

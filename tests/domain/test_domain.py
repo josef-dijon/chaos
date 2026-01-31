@@ -1,6 +1,7 @@
 from typing import Any, Dict, cast
 
 from chaos.domain.block import Block
+from chaos.domain.side_effect_class import SideEffectClass
 from chaos.domain.messages import (
     Request,
     Response,
@@ -95,4 +96,4 @@ def test_base_metadata_is_populated_on_request():
 def test_side_effect_class_normalization():
     block = MetadataEchoBlock(name="meta", side_effect_class="unknown")
 
-    assert block.side_effect_class == "non_idempotent"
+    assert block.side_effect_class == SideEffectClass.NON_IDEMPOTENT

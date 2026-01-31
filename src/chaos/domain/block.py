@@ -7,6 +7,7 @@ from uuid import uuid4
 from chaos.domain.block_estimate import BlockEstimate
 from chaos.domain.error_sanitizer import build_exception_details
 from chaos.domain.messages import Request, Response
+from chaos.domain.side_effect_class import SideEffectClass
 from chaos.domain.policy import (
     BubblePolicy,
     RecoveryPolicy,
@@ -41,7 +42,7 @@ class Block(ABC):
         entry_point: Optional[str] = None,
         transitions: Optional[Dict[str, Any]] = None,
         max_steps: int = 128,
-        side_effect_class: str = "none",
+        side_effect_class: SideEffectClass | str = SideEffectClass.NONE,
         stats_store: Optional[BlockStatsStore] = None,
     ):
         """Initialize a block.
@@ -120,7 +121,7 @@ class Block(ABC):
         return self._nodes
 
     @property
-    def side_effect_class(self) -> str:
+    def side_effect_class(self) -> SideEffectClass:
         """Return the side-effect classification for this block.
 
         This value is used by recovery logic to determine whether retry/repair is safe.
@@ -814,7 +815,7 @@ class Block(ABC):
         """Return True if retry/repair is allowed based on side-effect classification."""
 
         side_effect_class = self._normalize_side_effect_class(block.side_effect_class)
-        return side_effect_class in {"none", "idempotent"}
+        return side_effect_class in {SideEffectClass.NONE, SideEffectClass.IDEMPOTENT}
 
     def _unsafe_to_retry_response(self, node: "Block", failure: Response) -> Response:
         """Build a standard unsafe-to-retry response.
@@ -832,7 +833,7 @@ class Block(ABC):
             success=False,
             reason="unsafe_to_retry",
             details={
-                "side_effect_class": node.side_effect_class,
+                "side_effect_class": node.side_effect_class.value,
                 "failure_reason": failure.reason,
                 "failure_error_type": (
                     failure.error_type.__name__ if failure.error_type else None
@@ -842,16 +843,24 @@ class Block(ABC):
             error_type=failure_error_type,
         )
 
-    def _normalize_side_effect_class(self, value: str) -> str:
+    def _normalize_side_effect_class(
+        self, value: SideEffectClass | str
+    ) -> SideEffectClass:
         """Normalize a side-effect class string.
 
         Unknown values are treated as "non_idempotent".
         """
 
+        if isinstance(value, SideEffectClass):
+            return value
         normalized = (value or "").strip().lower()
-        if normalized in {"none", "idempotent", "non_idempotent"}:
-            return normalized
-        return "non_idempotent"
+        if normalized == SideEffectClass.NONE.value:
+            return SideEffectClass.NONE
+        if normalized == SideEffectClass.IDEMPOTENT.value:
+            return SideEffectClass.IDEMPOTENT
+        if normalized == SideEffectClass.NON_IDEMPOTENT.value:
+            return SideEffectClass.NON_IDEMPOTENT
+        return SideEffectClass.NON_IDEMPOTENT
 
     def get_policy_stack(self, error_type: Type[Exception]) -> List[RecoveryPolicy]:
         """Return the recovery policy stack for a given error type."""
