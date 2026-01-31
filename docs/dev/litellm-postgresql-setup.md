@@ -33,6 +33,16 @@ Then start the proxy using your preferred LiteLLM deployment method (Docker, pip
 http://localhost:4000
 ```
 
+### Provider API Keys
+LiteLLM is the abstraction layer for provider credentials. Configure provider keys in the LiteLLM environment (not in Chaos) so the proxy can route requests.
+
+At minimum, set the provider API keys your deployment needs, for example:
+```bash
+export OPENAI_API_KEY="<your-openai-key>"
+```
+
+If you use multiple providers, set the corresponding environment variables required by LiteLLM for each provider.
+
 ### PostgreSQL Setup
 PostgreSQL must be available before starting the LiteLLM proxy.
 
