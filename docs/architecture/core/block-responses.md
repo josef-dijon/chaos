@@ -16,7 +16,7 @@ This document uses standardized terms defined in:
 - [Block Glossary](block-glossary.md)
 
 ### Response System (Unified)
-Blocks return a single `Response` object instead of raising control-flow exceptions. A caller decides how to proceed based on `response.success()`.
+Blocks return a single `Response` object instead of raising control-flow exceptions. A caller decides how to proceed based on `response.success`.
 
 ### Response Fields
 
@@ -36,7 +36,7 @@ Notes:
 
 #### Response Helpers
 
-`Response.success()` returns `True` for successful attempts and `False` for failures.
+`Response.success` is `True` for successful attempts and `False` for failures.
 
 ### Handling Guarantees
 - A response always represents the final outcome of a block execution attempt.
@@ -46,6 +46,14 @@ Notes:
 ### Metadata and Serialization
 Metadata conventions and reserved keys are defined in:
 - [Block Request and Metadata](block-request-metadata.md)
+
+Composite responses add the following metadata keys:
+
+| Key | Description |
+| --- | --- |
+| `source` | Name of the block that produced the terminal response. |
+| `composite` | Name of the composite block that orchestrated execution. |
+| `last_node` | Name of the last executed node in the composite graph. |
 
 Serialization guidance:
 - If responses are serialized (for example: persisted in a ledger snapshot or transmitted), any fields used for recovery MUST be serializable.

@@ -7,6 +7,11 @@ from uuid import uuid4
 from chaos.domain.block_estimate import BlockEstimate
 from chaos.domain.error_sanitizer import build_exception_details
 from chaos.domain.messages import Request, Response
+from chaos.domain.response_metadata_keys import (
+    COMPOSITE_LAST_NODE_KEY,
+    COMPOSITE_NAME_KEY,
+    COMPOSITE_SOURCE_KEY,
+)
 from chaos.domain.side_effect_class import SideEffectClass
 from chaos.domain.policy import (
     BubblePolicy,
@@ -305,9 +310,9 @@ class Block(ABC):
                 final = response.model_copy(deep=False)
                 final.metadata = {
                     **dict(final.metadata or {}),
-                    "source": node.name,
-                    "composite": self.name,
-                    "last_node": current_node_name,
+                    COMPOSITE_SOURCE_KEY: node.name,
+                    COMPOSITE_NAME_KEY: self.name,
+                    COMPOSITE_LAST_NODE_KEY: current_node_name,
                 }
                 return final
 

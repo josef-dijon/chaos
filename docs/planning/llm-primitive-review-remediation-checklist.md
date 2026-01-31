@@ -79,7 +79,7 @@ Draft
 - [x] Replace free-form `side_effect_class` with an enum or Literal, validate at construction.
 - [x] Replace free-form estimate source/confidence strings with enums or Literals.
 - [x] Centralize schema error mapping logic in `src/chaos/llm/llm_error_mapper.py` to avoid duplicated branches.
-- [ ] Define and document composite metadata keys (`source`, `composite`, `last_node`) via constants/schema.
+- [x] Define and document composite metadata keys (`source`, `composite`, `last_node`) via constants/schema.
 
 ### Tests, docs, and verification
 - [x] Add tests for metadata id generation and propagation (root + child + retries/repairs).
@@ -92,7 +92,7 @@ Draft
 - [x] Update test helpers to match real API shapes (e.g., ModelSettings access in FakeAgent).
 - [ ] Add docstrings to test functions/helpers to meet project standard.
 - [x] Run `uv run pytest` and confirm coverage >= 95%.
-- [ ] Ensure architecture docs remain the source of truth and match implementation after changes.
+- [x] Ensure architecture docs remain the source of truth and match implementation after changes.
 
 ## References
 - [LLM Primitive Review Remediation Plan](llm-primitive-review-remediation-plan.md)
