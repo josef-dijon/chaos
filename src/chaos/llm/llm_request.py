@@ -12,7 +12,7 @@ class LLMRequest(BaseModel):
     )
     model: str = Field(description="Model identifier for the request.")
     temperature: float = Field(description="Sampling temperature.")
-    manager_id: str = Field(description="Unique manager identifier for auditing.")
+    execution_id: str = Field(description="Unique execution identifier for auditing.")
     attempt: int = Field(description="Attempt number for this execution.")
     metadata: Dict[str, Any] = Field(
         default_factory=dict, description="Provider metadata for auditing."

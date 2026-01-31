@@ -84,6 +84,8 @@ class LLMService:
                     "trace_id": metadata.get("trace_id"),
                     "run_id": metadata.get("run_id"),
                     "span_id": metadata.get("span_id"),
+                    "execution_id": request.execution_id,
+                    "llm_attempt": request.attempt,
                     "model": request.model,
                 },
             )
@@ -165,6 +167,8 @@ class LLMService:
                 "trace_id": metadata.get("trace_id"),
                 "run_id": metadata.get("run_id"),
                 "span_id": metadata.get("span_id"),
+                "execution_id": request.execution_id,
+                "llm_attempt": request.attempt,
                 "model": request.model,
             },
         )
@@ -179,6 +183,8 @@ class LLMService:
                 "trace_id": metadata.get("trace_id"),
                 "run_id": metadata.get("run_id"),
                 "span_id": metadata.get("span_id"),
+                "execution_id": request.execution_id,
+                "llm_attempt": request.attempt,
                 "model": request.model,
             },
         )

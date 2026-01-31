@@ -82,20 +82,24 @@ class LLMPrimitive(Block):
 
         messages = self._build_messages(prompt)
         model = self._model
-        manager_id = self._build_manager_id()
+        execution_id = self._build_execution_id()
         api_base, api_key = self._resolve_api_settings()
 
         llm_request = self._build_llm_request(
             request=request,
             messages=messages,
             model=model,
-            manager_id=manager_id,
+            execution_id=execution_id,
             attempt=1,
             api_base=api_base,
             api_key=api_key,
         )
         llm_response = self._llm_service.execute(llm_request)
-        response_metadata: Dict[str, Any] = {"model": model}
+        response_metadata: Dict[str, Any] = {
+            "model": model,
+            "llm.execution_id": execution_id,
+            "llm.attempt": llm_request.attempt,
+        }
         if llm_response.usage:
             response_metadata["llm_usage"] = dict(llm_response.usage)
             llm_calls = llm_response.usage.get("requests")
@@ -185,7 +189,7 @@ class LLMPrimitive(Block):
         request: Request,
         messages: List[Dict[str, str]],
         model: str,
-        manager_id: str,
+        execution_id: str,
         attempt: int,
         api_base: Optional[str],
         api_key: Optional[SecretStr],
@@ -196,7 +200,7 @@ class LLMPrimitive(Block):
             request: Block request driving the LLM call.
             messages: Message list for the LLM call.
             model: Selected model identifier.
-            manager_id: Unique manager identifier for auditing.
+            execution_id: Unique execution identifier for auditing.
             attempt: Internal attempt number for the LLM call.
             api_base: Optional API base for proxy routing.
             api_key: Optional API key for provider access.
@@ -206,16 +210,13 @@ class LLMPrimitive(Block):
         """
 
         metadata = dict(request.metadata)
-        metadata["manager_id"] = manager_id
         metadata.setdefault("block_name", self.name)
-        metadata["block.attempt"] = int(request.metadata.get("attempt", 1))
-        metadata["llm.attempt"] = attempt
         return LLMRequest(
             messages=messages,
             output_data_model=self._output_data_model,
             model=model,
             temperature=self._temperature,
-            manager_id=manager_id,
+            execution_id=execution_id,
             attempt=attempt,
             metadata=metadata,
             api_base=api_base,
@@ -308,8 +309,8 @@ class LLMPrimitive(Block):
             error_type=error_type,
         )
 
-    def _build_manager_id(self) -> str:
-        """Build a unique manager identifier for auditing."""
+    def _build_execution_id(self) -> str:
+        """Build a unique execution identifier for auditing."""
 
         return f"{self.name}-{uuid4().hex[:8]}"
 
@@ -326,9 +327,3 @@ class LLMPrimitive(Block):
 
         api_key_value = self._config.get_openai_api_key()
         return None, SecretStr(api_key_value) if api_key_value else None
-
-    def get_policy_stack(self, error_type: Type[Exception]) -> List[RecoveryPolicy]:
-        """Return hardcoded recovery policies for LLM failures."""
-
-        # PydanticAI owns API retry + schema retry; callers must bubble.
-        return [BubblePolicy()]

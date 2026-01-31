@@ -23,7 +23,7 @@ def _build_request() -> LLMRequest:
         output_data_model=MockSchema,
         model="test-model",
         temperature=0.0,
-        manager_id="manager-1",
+        execution_id="exec-1",
         attempt=1,
         metadata={},
     )
