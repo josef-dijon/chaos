@@ -6,6 +6,8 @@ Guidance for working in this repository, including workflows, tooling, and stand
 ## Index
 - [Ideations](ideations.md): Scratchpad and exploratory notes.
 - [LLM Primitive + Block Code Audit](llm-primitive-block-audit.md): Review findings and prioritized remediation recommendations.
+- [LLM Primitive Block](llm-primitive.md): User-facing guide to configuring and using the LLM Primitive block.
+- [LiteLLM + PostgreSQL Setup](litellm-postgresql-setup.md): Setup requirements for the LiteLLM proxy and PostgreSQL persistence.
 
 ## Roadmap
 - None yet.

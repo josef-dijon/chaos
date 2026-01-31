@@ -24,6 +24,7 @@ While "Hierarchical" is in the name, it refers to **Meta-Cognitive Control** rat
     - **Tools:** Executable capabilities.
 - **Access Control:** The Identity acts as a permission scope, whitelisting/blacklisting specific libraries to constrain the Actor's focus.
 - **Memory:** Integrated Long-Term Memory (Vector DB) and Short-Term Memory (Context Buffer).
+- **LLM Primitive Module:** A structured LLM block that enforces schema-validated outputs, applies controlled retry policies, and records usage/latency metadata for observability.
 
 ## Architecture
 
