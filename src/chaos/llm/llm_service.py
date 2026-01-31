@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Callable, Dict, List, Optional
+from collections import OrderedDict
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from pydantic import BaseModel
 from pydantic import SecretStr
@@ -36,6 +37,8 @@ class LLMService:
         output_retries: int = 2,
         api_max_retries: int = 2,
         model_builder: Optional[Callable[[LLMRequest], OpenAIChatModel]] = None,
+        model_cache_size: int = 32,
+        agent_cache_size: int = 32,
     ) -> None:
         """Initialize the LLM service.
 
@@ -43,11 +46,19 @@ class LLMService:
             output_retries: Number of PydanticAI output validation retries.
             api_max_retries: Number of API retries performed by the provider SDK.
             model_builder: Optional override for building the PydanticAI model.
+            model_cache_size: Maximum number of cached models.
+            agent_cache_size: Maximum number of cached agents.
         """
 
         self._output_retries = max(0, int(output_retries))
         self._api_max_retries = max(0, int(api_max_retries))
         self._model_builder = model_builder
+        self._model_cache_size = max(0, int(model_cache_size))
+        self._agent_cache_size = max(0, int(agent_cache_size))
+        self._model_cache: OrderedDict[Tuple[object, ...], OpenAIChatModel] = (
+            OrderedDict()
+        )
+        self._agent_cache: OrderedDict[Tuple[object, ...], Agent] = OrderedDict()
 
     def execute(self, request: LLMRequest) -> LLMResponse:
         """Execute the LLM call and return a structured response.
@@ -153,11 +164,10 @@ class LLMService:
 
         model = self._build_model(request)
         resolved_system_prompt = system_prompt or ""
-        agent = Agent(
-            model,
+        agent = self._get_or_create_agent(
+            model=model,
             system_prompt=resolved_system_prompt,
             output_type=request.output_data_model,
-            output_retries=self._output_retries,
         )
         metadata = request.metadata or {}
         logger.info(
@@ -227,11 +237,21 @@ class LLMService:
         api_key = self._resolve_api_key(request.api_key) or os.environ.get(
             "OPENAI_API_KEY"
         )
+        cache_key = (
+            request.model,
+            request.api_base or "",
+            api_key or "",
+        )
+        cached = self._get_cached_model(cache_key)
+        if cached is not None:
+            return cached
         if api_key is None:
             # Allow tests and callers to inject an already-configured model via
             # `model_builder`, and avoid instantiating the OpenAI SDK client
             # without credentials.
-            return OpenAIChatModel(request.model)
+            model = OpenAIChatModel(request.model)
+            self._store_model(cache_key, model)
+            return model
 
         client_kwargs: Dict[str, Any] = {
             "api_key": api_key,
@@ -243,7 +263,66 @@ class LLMService:
 
         openai_client = AsyncOpenAI(**client_kwargs)
         provider = OpenAIProvider(openai_client=openai_client)
-        return OpenAIChatModel(request.model, provider=provider)
+        model = OpenAIChatModel(request.model, provider=provider)
+        self._store_model(cache_key, model)
+        return model
+
+    def _get_cached_model(
+        self, cache_key: Tuple[object, ...]
+    ) -> Optional[OpenAIChatModel]:
+        """Return a cached model if present."""
+
+        if self._model_cache_size <= 0:
+            return None
+        model = self._model_cache.get(cache_key)
+        if model is None:
+            return None
+        self._model_cache.move_to_end(cache_key)
+        return model
+
+    def _store_model(
+        self, cache_key: Tuple[object, ...], model: OpenAIChatModel
+    ) -> None:
+        """Store a model in the cache with eviction."""
+
+        if self._model_cache_size <= 0:
+            return
+        self._model_cache[cache_key] = model
+        self._model_cache.move_to_end(cache_key)
+        if len(self._model_cache) > self._model_cache_size:
+            self._model_cache.popitem(last=False)
+
+    def _get_or_create_agent(
+        self,
+        model: OpenAIChatModel,
+        system_prompt: str,
+        output_type: type[BaseModel],
+    ) -> Agent:
+        """Get a cached agent or create a new one."""
+
+        if self._agent_cache_size > 0:
+            cache_key = (
+                id(model),
+                system_prompt,
+                output_type,
+                self._output_retries,
+            )
+            cached = self._agent_cache.get(cache_key)
+            if cached is not None:
+                self._agent_cache.move_to_end(cache_key)
+                return cached
+        agent = Agent(
+            model,
+            system_prompt=system_prompt,
+            output_type=output_type,
+            output_retries=self._output_retries,
+        )
+        if self._agent_cache_size > 0:
+            self._agent_cache[cache_key] = agent
+            self._agent_cache.move_to_end(cache_key)
+            if len(self._agent_cache) > self._agent_cache_size:
+                self._agent_cache.popitem(last=False)
+        return agent
 
     @staticmethod
     def _resolve_api_key(api_key: Optional[Any]) -> Optional[str]:

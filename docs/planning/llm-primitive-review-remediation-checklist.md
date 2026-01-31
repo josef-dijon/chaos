@@ -52,8 +52,8 @@ In Progress
 ### Performance & scalability
 - [x] Cache graph validation on build/setup and skip per-execution validation.
 - [x] Reduce deep-copy usage for Requests and terminal Responses (prefer shallow copies + metadata-only updates).
-- [ ] Cache/reuse LLM clients/models in `src/chaos/llm/llm_service.py` to avoid per-request construction.
-- [ ] Cache/reuse agents in `_run_agent` where safe.
+- [x] Cache/reuse LLM clients/models in `src/chaos/llm/llm_service.py` to avoid per-request construction.
+- [x] Cache/reuse agents in `_run_agent` where safe.
 - [ ] Replace `src/chaos/stats/json_block_stats_store.py` rewrite-per-attempt with append-only journaling or batched writes + rotation.
 - [ ] Add an index (by block identity) to make `estimate` faster than scanning all records.
 - [x] Add bounded retention to prevent unbounded in-memory record growth.
