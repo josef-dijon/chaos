@@ -11,6 +11,13 @@ class Request(BaseModel):
     context: Dict[str, Any] = Field(default_factory=dict)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
+    def __init__(self, **data: Any) -> None:
+        """Initialize the request and ensure an envelope id is present."""
+
+        super().__init__(**data)
+        if "id" not in self.metadata:
+            self.metadata["id"] = str(uuid4())
+
 
 class Response(BaseModel):
     """Unified response object returned by blocks."""

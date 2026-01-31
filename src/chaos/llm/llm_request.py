@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional, Type
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
 
 class LLMRequest(BaseModel):
@@ -20,7 +20,7 @@ class LLMRequest(BaseModel):
     api_base: Optional[str] = Field(
         default=None, description="Optional API base override for proxy usage."
     )
-    api_key: Optional[str] = Field(
+    api_key: Optional[SecretStr] = Field(
         default=None, description="Optional API key for provider access."
     )
 

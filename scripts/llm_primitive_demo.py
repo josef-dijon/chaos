@@ -1,4 +1,5 @@
 import argparse
+from typing import Any, Dict
 
 from pydantic import BaseModel
 
@@ -22,11 +23,12 @@ def _build_system_prompt() -> str:
     )
 
 
-def run_demo(prompt: str) -> int:
+def run_demo(prompt: str, debug: bool) -> int:
     """Execute the LLM primitive demo with the given prompt.
 
     Args:
         prompt: Prompt text sent to the LLM.
+        debug: When True, include structured failure details in output.
 
     Returns:
         Process exit code (0 for success).
@@ -53,7 +55,10 @@ def run_demo(prompt: str) -> int:
         return 0
     if response.success() is False:
         print("Failure:")
-        print({"reason": response.reason, "details": response.details})
+        payload: Dict[str, Any] = {"reason": response.reason}
+        if debug:
+            payload["details"] = response.details
+        print(payload)
         return 2
 
     print("Unexpected response type.")
@@ -69,8 +74,13 @@ def main() -> None:
         default="Say hello in JSON.",
         help="User prompt to send to the LLM.",
     )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Include structured failure details in output.",
+    )
     args = parser.parse_args()
-    raise SystemExit(run_demo(args.prompt))
+    raise SystemExit(run_demo(args.prompt, args.debug))
 
 
 if __name__ == "__main__":

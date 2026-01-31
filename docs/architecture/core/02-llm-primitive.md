@@ -33,16 +33,19 @@ The primitive is configured at construction time via direct arguments. This conf
 | `output_data_model` | Type[BaseModel] | Required schema for validation. |
 | `model` | str | Provider model id. |
 | `temperature` | float | Generation temperature. |
+| `output_retries` | int | Number of internal schema retry attempts for validation failures. |
+| `config` | Config | Provider configuration (proxy routing, API keys, defaults). |
 
-Implementation note:
+Implementation notes:
 - Provider calls are routed through LiteLLM. When `model` is omitted, the default is sourced from `Config.model_name`.
 - When supported by the provider, the output schema is passed as a response-format hint.
+- Optional injection seams (for testing only) may exist for the LLM executor and stats adapter, but they are not part of the stable contract.
 
 ### 3. Inputs and Outputs
 
 | Input | Type | Description |
 | --- | --- | --- |
-| `payload` | str | User message content. |
+| `payload` | str | User message content (must be a string, not an envelope dict). |
 | `context` | dict | Not required; block is stateless. |
 
 | Output | Type | Description |
@@ -78,6 +81,11 @@ The `LLMPrimitive` uses PydanticAI to manage both:
 As a result, the caller (including composites) MUST NOT manage API retry or schema retry for LLMPrimitive failures via the block recovery policy system.
 
 The recovery policy system still applies to LLMPrimitive for local non-LLM errors (for example: invalid payload), but LLM-facing failures should generally bubble once PydanticAI has exhausted its internal retry budget.
+
+Retry layers summary:
+- Provider/client layer: transient provider retries (handled inside PydanticAI/LiteLLM).
+- Schema layer: structured output retries (handled inside PydanticAI).
+- Block recovery layer: only for non-LLM failures (invalid payload, config errors). LLM-facing errors bubble.
 
 The architecture does not require the mapping to be "hardcoded" in the class body, but it does require that:
 - recovery selection is driven by `error_type`

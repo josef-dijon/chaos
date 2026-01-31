@@ -1,11 +1,15 @@
 from typing import Any, Dict, List, Optional, Type
 from uuid import uuid4
 
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretStr
 
 from chaos.config import Config
 from chaos.domain.block import Block
 from chaos.domain.block_estimate import BlockEstimate
+from chaos.domain.error_sanitizer import (
+    build_exception_details,
+    sanitize_error_details,
+)
 from chaos.domain.exceptions import (
     ApiKeyError,
     ContextLengthError,
@@ -101,7 +105,7 @@ class LLMPrimitive(Block):
             llm_calls = llm_response.usage.get("requests")
             if isinstance(llm_calls, int):
                 response_metadata["llm_calls"] = llm_calls
-                response_metadata["llm_retry_count"] = max(0, llm_calls - 1)
+                response_metadata["llm.retry_count"] = max(0, llm_calls - 1)
             input_tokens = llm_response.usage.get("input_tokens")
             if isinstance(input_tokens, int):
                 response_metadata["input_tokens"] = input_tokens
@@ -187,7 +191,7 @@ class LLMPrimitive(Block):
         manager_id: str,
         attempt: int,
         api_base: Optional[str],
-        api_key: Optional[str],
+        api_key: Optional[SecretStr],
     ) -> LLMRequest:
         """Build the internal LLM request payload.
 
@@ -207,8 +211,8 @@ class LLMPrimitive(Block):
         metadata = dict(request.metadata)
         metadata["manager_id"] = manager_id
         metadata.setdefault("block_name", self.name)
-        metadata["block_attempt"] = int(request.metadata.get("attempt", 1))
-        metadata["llm_attempt"] = attempt
+        metadata["block.attempt"] = int(request.metadata.get("attempt", 1))
+        metadata["llm.attempt"] = attempt
         return LLMRequest(
             messages=messages,
             output_data_model=self._output_data_model,
@@ -290,7 +294,7 @@ class LLMPrimitive(Block):
         return Response(
             success=False,
             reason=reason,
-            details={"error": str(error)},
+            details=build_exception_details(error),
             error_type=error_type,
         )
 
@@ -299,10 +303,11 @@ class LLMPrimitive(Block):
 
         reason = response.reason or "llm_execution_failed"
         error_type = response.error_type or Exception
+        details = sanitize_error_details(response.error_details)
         return Response(
             success=False,
             reason=reason,
-            details=response.error_details,
+            details=details,
             error_type=error_type,
         )
 
@@ -311,18 +316,19 @@ class LLMPrimitive(Block):
 
         return f"{self.name}-{uuid4().hex[:8]}"
 
-    def _resolve_api_settings(self) -> tuple[Optional[str], Optional[str]]:
+    def _resolve_api_settings(self) -> tuple[Optional[str], Optional[SecretStr]]:
         """Resolve API base and key for OpenAI-compatible routing."""
 
         if self._config.use_litellm_proxy():
             api_base = self._config.get_litellm_proxy_url()
-            api_key = (
+            api_key_value = (
                 self._config.get_litellm_proxy_api_key()
                 or self._config.get_openai_api_key()
             )
-            return api_base, api_key
+            return api_base, SecretStr(api_key_value) if api_key_value else None
 
-        return None, self._config.get_openai_api_key()
+        api_key_value = self._config.get_openai_api_key()
+        return None, SecretStr(api_key_value) if api_key_value else None
 
     def get_policy_stack(self, error_type: Type[Exception]) -> List[RecoveryPolicy]:
         """Return hardcoded recovery policies for LLM failures."""

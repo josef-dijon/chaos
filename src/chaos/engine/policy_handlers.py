@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Callable, Optional
 
+from chaos.domain.error_sanitizer import build_exception_details
 from chaos.domain.messages import Request, Response
 from chaos.domain.policy import (
     BubblePolicy,
@@ -45,6 +46,7 @@ class PolicyHandler:
                 success=False,
                 reason=f"unknown_policy_type:{policy.type}",
                 details={"policy_type": str(policy.type)},
+                error_type=Exception,
             )
 
     @staticmethod
@@ -65,7 +67,11 @@ class PolicyHandler:
             return Response(
                 success=False,
                 reason="repair_execution_failed",
-                details={"repair_function": policy.repair_function, "error": str(e)},
+                details={
+                    "repair_function": policy.repair_function,
+                    "error": build_exception_details(e),
+                },
+                error_type=Exception,
             )
 
     @staticmethod
@@ -81,6 +87,7 @@ class PolicyHandler:
             reason="debug_breakpoint_hit",
             details={"original_error": failure.model_dump()},
             metadata=dict(request.metadata or {}),
+            error_type=Exception,
         )
 
     @staticmethod

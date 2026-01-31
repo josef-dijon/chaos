@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import logging
 import os
 from typing import Any, Callable, Dict, List, Optional
 
 from pydantic import BaseModel
+from pydantic import SecretStr
 
 from pydantic_ai import Agent, ModelSettings
 from pydantic_ai.models.openai import OpenAIChatModel
@@ -14,9 +16,13 @@ try:
 except ImportError:  # pragma: no cover
     AsyncOpenAI = None  # type: ignore
 
-from chaos.llm.llm_error_mapper import map_llm_error
+from chaos.domain.error_sanitizer import build_exception_details
+from chaos.llm.llm_error_mapper import is_known_llm_error, map_llm_error
 from chaos.llm.llm_request import LLMRequest
 from chaos.llm.llm_response import LLMResponse
+from chaos.llm.response_status import ResponseStatus
+
+logger = logging.getLogger(__name__)
 
 
 class LLMService:
@@ -62,12 +68,30 @@ class LLMService:
             )
             return LLMResponse.success(data=data, raw_output=None, usage=usage)
         except Exception as exc:
-            mapping = map_llm_error(exc)
+            if is_known_llm_error(exc):
+                mapping = map_llm_error(exc)
+                return LLMResponse.failure(
+                    status=mapping.status,
+                    reason=mapping.reason,
+                    error_type=mapping.error_type,
+                    error_details=mapping.details,
+                )
+            metadata = request.metadata or {}
+            logger.exception(
+                "Unexpected LLM execution error",
+                extra={
+                    "request_id": metadata.get("id"),
+                    "trace_id": metadata.get("trace_id"),
+                    "run_id": metadata.get("run_id"),
+                    "span_id": metadata.get("span_id"),
+                    "model": request.model,
+                },
+            )
             return LLMResponse.failure(
-                status=mapping.status,
-                reason=mapping.reason,
-                error_type=mapping.error_type,
-                error_details=mapping.details,
+                status=ResponseStatus.MECHANICAL_ERROR,
+                reason="internal_error",
+                error_type=type(exc),
+                error_details=build_exception_details(exc),
             )
 
     def _render_prompts(
@@ -132,9 +156,30 @@ class LLMService:
             output_type=request.output_data_model,
             output_retries=self._output_retries,
         )
+        metadata = request.metadata or {}
+        logger.info(
+            "LLM request start",
+            extra={
+                "request_id": metadata.get("id"),
+                "trace_id": metadata.get("trace_id"),
+                "run_id": metadata.get("run_id"),
+                "span_id": metadata.get("span_id"),
+                "model": request.model,
+            },
+        )
         result = agent.run_sync(
             user_prompt,
             model_settings=ModelSettings(temperature=request.temperature),
+        )
+        logger.info(
+            "LLM request complete",
+            extra={
+                "request_id": metadata.get("id"),
+                "trace_id": metadata.get("trace_id"),
+                "run_id": metadata.get("run_id"),
+                "span_id": metadata.get("span_id"),
+                "model": request.model,
+            },
         )
 
         output = result.output
@@ -172,7 +217,9 @@ class LLMService:
             # installs the OpenAI SDK.
             return OpenAIChatModel(request.model)
 
-        api_key = request.api_key or os.environ.get("OPENAI_API_KEY")
+        api_key = self._resolve_api_key(request.api_key) or os.environ.get(
+            "OPENAI_API_KEY"
+        )
         if api_key is None:
             # Allow tests and callers to inject an already-configured model via
             # `model_builder`, and avoid instantiating the OpenAI SDK client
@@ -190,3 +237,15 @@ class LLMService:
         openai_client = AsyncOpenAI(**client_kwargs)
         provider = OpenAIProvider(openai_client=openai_client)
         return OpenAIChatModel(request.model, provider=provider)
+
+    @staticmethod
+    def _resolve_api_key(api_key: Optional[Any]) -> Optional[str]:
+        """Resolve a secret or plain API key to a string."""
+
+        if api_key is None:
+            return None
+        if isinstance(api_key, SecretStr):
+            return api_key.get_secret_value()
+        if isinstance(api_key, str):
+            return api_key
+        return str(api_key)

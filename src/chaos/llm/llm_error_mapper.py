@@ -16,6 +16,10 @@ try:
 except ImportError:  # pragma: no cover
     UnexpectedModelBehavior = None  # type: ignore
 
+from chaos.domain.error_sanitizer import (
+    build_exception_details,
+    sanitize_error_details,
+)
 from chaos.domain.exceptions import (
     ApiKeyError,
     ContextLengthError,
@@ -45,11 +49,8 @@ def map_llm_error(error: Exception) -> LLMErrorMapping:
         LLMErrorMapping describing the failure.
     """
 
-    details: Dict[str, Any] = {"error": str(error)}
-
+    details: Dict[str, Any] = build_exception_details(error)
     cause = getattr(error, "__cause__", None)
-    if cause is not None:
-        details["cause"] = str(cause)
 
     if ValidationError is not None and isinstance(error, ValidationError):
         return LLMErrorMapping(
@@ -88,6 +89,13 @@ def map_llm_error(error: Exception) -> LLMErrorMapping:
                 error_type=ApiKeyError,
                 details=details,
             )
+        if _is_context_length_payload(_extract_error_payload(error)):
+            return LLMErrorMapping(
+                status=ResponseStatus.CAPACITY_ERROR,
+                reason="context_length_error",
+                error_type=ContextLengthError,
+                details=details,
+            )
     if isinstance(error, SchemaError):
         return LLMErrorMapping(
             status=ResponseStatus.SEMANTIC_ERROR,
@@ -116,6 +124,7 @@ def map_llm_error(error: Exception) -> LLMErrorMapping:
             error_type=ContextLengthError,
             details=details,
         )
+    details = sanitize_error_details(details)
     error_name = error.__class__.__name__.lower()
     error_message = str(error).lower()
 
@@ -158,17 +167,67 @@ def map_llm_error(error: Exception) -> LLMErrorMapping:
             error_type=ApiKeyError,
             details=details,
         )
-    if "context" in error_name or "context" in error_message:
-        return LLMErrorMapping(
-            status=ResponseStatus.CAPACITY_ERROR,
-            reason="context_length_error",
-            error_type=ContextLengthError,
-            details=details,
-        )
-
     return LLMErrorMapping(
         status=ResponseStatus.MECHANICAL_ERROR,
         reason="llm_execution_failed",
         error_type=type(error),
         details=details,
     )
+
+
+def is_known_llm_error(error: Exception) -> bool:
+    """Return True for errors that should be mapped as LLM failures."""
+
+    cause = getattr(error, "__cause__", None)
+    if ValidationError is not None and isinstance(error, ValidationError):
+        return True
+    if (
+        UnexpectedModelBehavior is not None
+        and isinstance(error, UnexpectedModelBehavior)
+        and ValidationError is not None
+        and isinstance(cause, ValidationError)
+    ):
+        return True
+    if httpx is not None and isinstance(error, httpx.HTTPStatusError):
+        return True
+    if httpx is not None and isinstance(error, httpx.RequestError):
+        return True
+    return isinstance(
+        error, (SchemaError, RateLimitError, ApiKeyError, ContextLengthError)
+    )
+
+
+def _extract_error_payload(error: "httpx.HTTPStatusError") -> Dict[str, Any]:
+    """Extract error payload from an HTTP status error."""
+
+    try:
+        payload = error.response.json()
+    except Exception:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _is_context_length_payload(payload: Dict[str, Any]) -> bool:
+    """Return True when payload indicates a context-length error."""
+
+    error_info = payload.get("error") if isinstance(payload, dict) else None
+    if not isinstance(error_info, dict):
+        return False
+    code = error_info.get("code") or error_info.get("type")
+    if isinstance(code, str):
+        normalized = code.strip().lower()
+        if normalized in {
+            "context_length_exceeded",
+            "context_window_exceeded",
+            "context_length",
+            "context_window",
+        }:
+            return True
+    message = error_info.get("message")
+    if isinstance(message, str):
+        normalized = message.strip().lower()
+        if "maximum context length" in normalized:
+            return True
+        if "context length exceeded" in normalized:
+            return True
+    return False

@@ -1,9 +1,13 @@
-import json
 from pathlib import Path
 from typing import Optional
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings.sources import (
+    DotEnvSettingsSource,
+    EnvSettingsSource,
+    JsonConfigSettingsSource,
+)
 
 DEFAULT_CHAOS_DIR = Path(".chaos")
 DEFAULT_CONFIG_PATH = DEFAULT_CHAOS_DIR / "config.json"
@@ -14,19 +18,19 @@ class Config(BaseSettings):
     Application configuration loaded from environment variables, .env, and JSON.
     """
 
-    openai_api_key: Optional[str] = Field(
+    openai_api_key: Optional[SecretStr] = Field(
         default=None, description="OpenAI API key used for LLM access."
     )
     model_name: str = Field(
         default="gpt-4o", description="Default model name for the agent runtime."
     )
     litellm_use_proxy: bool = Field(
-        default=True, description="Route LLM traffic through the LiteLLM proxy."
+        default=False, description="Route LLM traffic through the LiteLLM proxy."
     )
     litellm_proxy_url: Optional[str] = Field(
         default=None, description="LiteLLM proxy base URL."
     )
-    litellm_proxy_api_key: Optional[str] = Field(
+    litellm_proxy_api_key: Optional[SecretStr] = Field(
         default=None, description="LiteLLM proxy API key."
     )
     env: str = Field(default="dev", description="Execution environment name.")
@@ -100,7 +104,19 @@ class Config(BaseSettings):
             )
         if self.tool_root is None:
             self.tool_root = Path.cwd().resolve()
+        if self.litellm_use_proxy and not self.litellm_proxy_url:
+            raise ValueError(
+                "LiteLLM proxy URL is required when proxy mode is enabled."
+            )
         return self
+
+    @staticmethod
+    def _secret_to_str(secret: Optional[SecretStr]) -> Optional[str]:
+        """Return the underlying secret value if present."""
+
+        if secret is None:
+            return None
+        return secret.get_secret_value()
 
     @classmethod
     def load(cls, path: Optional[Path] = None) -> "Config":
@@ -117,9 +133,14 @@ class Config(BaseSettings):
         if not config_path.exists():
             return cls()
 
-        with config_path.open("r", encoding="utf-8") as handle:
-            payload = json.load(handle)
-        return cls.model_validate(payload)
+        json_source = JsonConfigSettingsSource(cls, json_file=config_path)
+        dotenv_source = DotEnvSettingsSource(cls)
+        env_source = EnvSettingsSource(cls)
+        merged: dict[str, object] = {}
+        merged.update(json_source())
+        merged.update(dotenv_source())
+        merged.update(env_source())
+        return cls.model_validate(merged)
 
     def get_openai_api_key(self) -> Optional[str]:
         """
@@ -128,7 +149,7 @@ class Config(BaseSettings):
         Returns:
             The OpenAI API key or None if unset.
         """
-        return self.openai_api_key
+        return self._secret_to_str(self.openai_api_key)
 
     def use_litellm_proxy(self) -> bool:
         """Returns whether LiteLLM proxy usage is enabled."""
@@ -143,7 +164,7 @@ class Config(BaseSettings):
     def get_litellm_proxy_api_key(self) -> Optional[str]:
         """Returns the configured LiteLLM proxy API key."""
 
-        return self.litellm_proxy_api_key
+        return self._secret_to_str(self.litellm_proxy_api_key)
 
     def get_model_name(self) -> str:
         """

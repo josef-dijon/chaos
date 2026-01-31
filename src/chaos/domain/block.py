@@ -1,9 +1,11 @@
 from abc import ABC, abstractmethod
-from time import perf_counter
+import logging
+from time import perf_counter, sleep
 from typing import Any, Dict, List, Optional, Type
 from uuid import uuid4
 
 from chaos.domain.block_estimate import BlockEstimate
+from chaos.domain.error_sanitizer import build_exception_details
 from chaos.domain.messages import Request, Response
 from chaos.domain.policy import (
     BubblePolicy,
@@ -19,6 +21,8 @@ from chaos.engine.registry import RepairRegistry
 from chaos.stats.block_attempt_record import BlockAttemptRecord
 from chaos.stats.block_stats_identity import BlockStatsIdentity
 from chaos.stats.store_registry import get_default_store
+
+logger = logging.getLogger(__name__)
 
 
 class Block(ABC):
@@ -132,10 +136,24 @@ class Block(ABC):
             else:
                 response = self._execute_primitive(request_for_execution)
         except Exception as e:
+            metadata = request_for_execution.metadata
+            logger.exception(
+                "Block execution failed",
+                extra={
+                    "block_name": self.name,
+                    "node_name": metadata.get("node_name"),
+                    "request_id": metadata.get("id"),
+                    "trace_id": metadata.get("trace_id"),
+                    "run_id": metadata.get("run_id"),
+                    "span_id": metadata.get("span_id"),
+                    "parent_span_id": metadata.get("parent_span_id"),
+                    "attempt": metadata.get("attempt"),
+                },
+            )
             response = Response(
                 success=False,
                 reason="internal_error",
-                details={"error": str(e)},
+                details=build_exception_details(e),
                 error_type=type(e),
             )
         finally:
@@ -209,6 +227,7 @@ class Block(ABC):
                     details={
                         "error": f"Entry point/Node '{current_node_name}' not found"
                     },
+                    error_type=Exception,
                 )
 
             # Execute the child with recovery logic
@@ -243,7 +262,20 @@ class Block(ABC):
                             error_type=Exception,
                         )
 
-                    if condition_func(response):
+                    try:
+                        condition_result = condition_func(response)
+                    except Exception as exc:
+                        return Response(
+                            success=False,
+                            reason="condition_execution_error",
+                            details={
+                                "condition": condition_name,
+                                "error": build_exception_details(exc),
+                            },
+                            error_type=Exception,
+                        )
+
+                    if condition_result:
                         next_node_name = target
                         break
 
@@ -313,19 +345,33 @@ class Block(ABC):
         for policy in policies:
             if isinstance(policy, RetryPolicy):
                 if not self._is_recoverable_via_retry(node):
+                    failure_error_type = current_failure.error_type or Exception
                     return Response(
                         success=False,
                         reason="unsafe_to_retry",
-                        details={"side_effect_class": node.side_effect_class},
-                        error_type=Exception,
+                        details={
+                            "side_effect_class": node.side_effect_class,
+                            "failure_reason": current_failure.reason,
+                            "failure_error_type": (
+                                current_failure.error_type.__name__
+                                if current_failure.error_type
+                                else None
+                            ),
+                            "failure_details": current_failure.details,
+                        },
+                        error_type=failure_error_type,
                     )
-                for _ in range(policy.max_attempts):
+                remaining_attempts = max(policy.max_attempts - attempt, 0)
+                for _ in range(remaining_attempts):
                     attempt += 1
+                    if policy.delay_seconds > 0:
+                        sleep(policy.delay_seconds)
                     retry_request = self._build_child_request(
                         parent_request=request,
                         child=node,
                         node_name=node_name,
                         attempt=attempt,
+                        source_request=last_child_request,
                     )
                     last_child_request = retry_request
                     retry_response = node.execute(retry_request)
@@ -334,11 +380,21 @@ class Block(ABC):
                     current_failure = retry_response
             elif isinstance(policy, RepairPolicy):
                 if not self._is_recoverable_via_retry(node):
+                    failure_error_type = current_failure.error_type or Exception
                     return Response(
                         success=False,
                         reason="unsafe_to_retry",
-                        details={"side_effect_class": node.side_effect_class},
-                        error_type=Exception,
+                        details={
+                            "side_effect_class": node.side_effect_class,
+                            "failure_reason": current_failure.reason,
+                            "failure_error_type": (
+                                current_failure.error_type.__name__
+                                if current_failure.error_type
+                                else None
+                            ),
+                            "failure_details": current_failure.details,
+                        },
+                        error_type=failure_error_type,
                     )
 
                 try:
@@ -349,7 +405,7 @@ class Block(ABC):
                         reason="repair_execution_failed",
                         details={
                             "repair_function": policy.repair_function,
-                            "error": str(exc),
+                            "error": build_exception_details(exc),
                         },
                         error_type=Exception,
                     )
@@ -357,15 +413,12 @@ class Block(ABC):
                 repaired = repair_func(last_child_request, current_failure)
                 attempt += 1
 
-                repaired_parent_request = request.model_copy(deep=True)
-                repaired_parent_request.payload = repaired.payload
-                repaired_parent_request.context = repaired.context
-
                 repaired_attempt_request = self._build_child_request(
-                    parent_request=repaired_parent_request,
+                    parent_request=request,
                     child=node,
                     node_name=node_name,
                     attempt=attempt,
+                    source_request=repaired,
                 )
                 last_child_request = repaired_attempt_request
                 repaired_response = node.execute(repaired_attempt_request)
@@ -525,8 +578,22 @@ class Block(ABC):
         record = self._build_attempt_record(request, response, duration_ms)
         try:
             get_default_store().record_attempt(record)
-        except Exception:
-            return
+        except Exception as exc:
+            metadata = request.metadata
+            logger.exception(
+                "Failed to record block attempt",
+                extra={
+                    "block_name": self.name,
+                    "node_name": metadata.get("node_name"),
+                    "request_id": metadata.get("id"),
+                    "trace_id": metadata.get("trace_id"),
+                    "run_id": metadata.get("run_id"),
+                    "span_id": metadata.get("span_id"),
+                    "parent_span_id": metadata.get("parent_span_id"),
+                    "attempt": metadata.get("attempt"),
+                    "error": build_exception_details(exc),
+                },
+            )
 
     def _with_base_metadata(self, request: Request) -> Request:
         """Return a request copy with minimal base metadata populated.
@@ -537,6 +604,7 @@ class Block(ABC):
         cloned = request.model_copy(deep=True)
         md = cloned.metadata
 
+        md.setdefault("id", str(uuid4()))
         md.setdefault("trace_id", str(uuid4()))
         md.setdefault("run_id", str(uuid4()))
         md.setdefault("span_id", str(uuid4()))
@@ -555,6 +623,7 @@ class Block(ABC):
         """
 
         for key in (
+            "id",
             "trace_id",
             "run_id",
             "span_id",
@@ -564,7 +633,7 @@ class Block(ABC):
             "node_name",
         ):
             if key in request.metadata:
-                response.metadata.setdefault(key, request.metadata[key])
+                response.metadata[key] = request.metadata[key]
 
     def _build_child_request(
         self,
@@ -572,6 +641,7 @@ class Block(ABC):
         child: "Block",
         node_name: str,
         attempt: int,
+        source_request: Optional[Request] = None,
     ) -> Request:
         """Construct a child request, propagating correlation metadata.
 
@@ -579,8 +649,12 @@ class Block(ABC):
         """
 
         cloned = parent_request.model_copy(deep=True)
+        if source_request is not None:
+            cloned.payload = source_request.payload
+            cloned.context = source_request.context
         md = cloned.metadata
 
+        md["id"] = str(uuid4())
         md.setdefault("trace_id", str(uuid4()))
         md.setdefault("run_id", str(uuid4()))
         md["parent_span_id"] = md.get("span_id")

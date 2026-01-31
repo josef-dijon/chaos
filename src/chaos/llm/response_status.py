@@ -9,4 +9,3 @@ class ResponseStatus(str, Enum):
     MECHANICAL_ERROR = "mechanical_error"
     CAPACITY_ERROR = "capacity_error"
     CONFIG_ERROR = "config_error"
-    BUDGET_ERROR = "budget_error"
