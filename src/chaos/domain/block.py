@@ -353,22 +353,7 @@ class Block(ABC):
         for policy in policies:
             if isinstance(policy, RetryPolicy):
                 if not self._is_recoverable_via_retry(node):
-                    failure_error_type = current_failure.error_type or Exception
-                    return Response(
-                        success=False,
-                        reason="unsafe_to_retry",
-                        details={
-                            "side_effect_class": node.side_effect_class,
-                            "failure_reason": current_failure.reason,
-                            "failure_error_type": (
-                                current_failure.error_type.__name__
-                                if current_failure.error_type
-                                else None
-                            ),
-                            "failure_details": current_failure.details,
-                        },
-                        error_type=failure_error_type,
-                    )
+                    return self._unsafe_to_retry_response(node, current_failure)
                 remaining_attempts = max(policy.max_attempts - attempt, 0)
                 for _ in range(remaining_attempts):
                     attempt += 1
@@ -388,22 +373,7 @@ class Block(ABC):
                     current_failure = retry_response
             elif isinstance(policy, RepairPolicy):
                 if not self._is_recoverable_via_retry(node):
-                    failure_error_type = current_failure.error_type or Exception
-                    return Response(
-                        success=False,
-                        reason="unsafe_to_retry",
-                        details={
-                            "side_effect_class": node.side_effect_class,
-                            "failure_reason": current_failure.reason,
-                            "failure_error_type": (
-                                current_failure.error_type.__name__
-                                if current_failure.error_type
-                                else None
-                            ),
-                            "failure_details": current_failure.details,
-                        },
-                        error_type=failure_error_type,
-                    )
+                    return self._unsafe_to_retry_response(node, current_failure)
 
                 try:
                     repair_func = RepairRegistry.get(policy.repair_function)
@@ -707,6 +677,32 @@ class Block(ABC):
 
         side_effect_class = self._normalize_side_effect_class(block.side_effect_class)
         return side_effect_class in {"none", "idempotent"}
+
+    def _unsafe_to_retry_response(self, node: "Block", failure: Response) -> Response:
+        """Build a standard unsafe-to-retry response.
+
+        Args:
+            node: The node that was attempted.
+            failure: The original failure response.
+
+        Returns:
+            A response indicating retries are unsafe.
+        """
+
+        failure_error_type = failure.error_type or Exception
+        return Response(
+            success=False,
+            reason="unsafe_to_retry",
+            details={
+                "side_effect_class": node.side_effect_class,
+                "failure_reason": failure.reason,
+                "failure_error_type": (
+                    failure.error_type.__name__ if failure.error_type else None
+                ),
+                "failure_details": failure.details,
+            },
+            error_type=failure_error_type,
+        )
 
     def _normalize_side_effect_class(self, value: str) -> str:
         """Normalize a side-effect class string.

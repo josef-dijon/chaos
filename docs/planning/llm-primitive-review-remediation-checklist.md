@@ -68,13 +68,13 @@ Draft
 
 ### DRY, naming, and API cleanup
 - [ ] Refactor `Block._execute_child_with_recovery` into smaller helpers.
-- [ ] Extract a single unsafe-to-retry helper used by both RetryPolicy and RepairPolicy branches.
+- [x] Extract a single unsafe-to-retry helper used by both RetryPolicy and RepairPolicy branches.
 - [x] Remove `src/chaos/llm/model_selector.py` if it is still a no-op; update call sites and delete/update `tests/llm/test_model_selector.py`.
 - [ ] Remove redundant `LLMPrimitive.get_policy_stack` override if it matches the base behavior.
 - [ ] Rename `manager_id` to `execution_id` (or `correlation_id`) consistently across `LLMPrimitive`, `LLMRequest`, and metadata.
 - [ ] Remove duplicated sources of truth for attempt/execution ids (single authoritative location).
 - [ ] Standardize on a single Response success field name (`success`) and remove aliasing (`ok`).
-- [ ] Fix `_run_agent` system prompt typing and stop passing `()` for missing prompts.
+- [x] Fix `_run_agent` system prompt typing and stop passing `()` for missing prompts.
 - [ ] Remove or implement request-aware estimation; if removing, update `src/chaos/stats/estimate_builder.py` signatures/docs and tests.
 - [ ] Replace free-form `side_effect_class` with an enum or Literal, validate at construction.
 - [ ] Replace free-form estimate source/confidence strings with enums or Literals.

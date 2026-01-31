@@ -150,9 +150,10 @@ class LLMService:
         """
 
         model = self._build_model(request)
+        resolved_system_prompt = system_prompt or ""
         agent = Agent(
             model,
-            system_prompt=system_prompt or (),
+            system_prompt=resolved_system_prompt,
             output_type=request.output_data_model,
             output_retries=self._output_retries,
         )
