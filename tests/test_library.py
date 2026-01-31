@@ -13,6 +13,7 @@ class MockLibrary(Library[MockItem]):
 
 
 def test_library_filtering():
+    """Filters items using whitelist and blacklist access control."""
     lib = MockLibrary()
     items = [MockItem("a"), MockItem("b"), MockItem("c")]
 
@@ -36,6 +37,7 @@ def test_library_filtering():
 
 
 def test_empty_lists():
+    """Handles empty whitelist/blacklist inputs."""
     lib = MockLibrary()
     items = [MockItem("a")]
 

@@ -5,6 +5,8 @@ from chaos.engine.registry import RepairRegistry, add_validation_feedback
 
 
 def test_registry_registration():
+    """Registers and retrieves a repair function."""
+
     @RepairRegistry.register("test_func")
     def func(req, fail):
         return req
@@ -14,11 +16,14 @@ def test_registry_registration():
 
 
 def test_registry_get_missing():
+    """Raises for unknown repair function names."""
     with pytest.raises(ValueError):
         RepairRegistry.get("missing_func")
 
 
 def test_registry_clear():
+    """Clears registered repair functions."""
+
     @RepairRegistry.register("test_func")
     def func(req, fail):
         return req
@@ -29,11 +34,13 @@ def test_registry_clear():
 
 
 def test_registry_clear_preserves_builtin_repairs() -> None:
+    """Retains built-in repairs after clear."""
     RepairRegistry.clear()
     assert callable(RepairRegistry.get("add_validation_feedback"))
 
 
 def test_add_validation_feedback_appends_to_existing_prompt() -> None:
+    """Appends validation feedback to existing prompts."""
     request = Request(payload={"prompt": "hello"}, metadata={"trace_id": "t"})
     failure = Response(success=False, reason="schema_error", details={"error": "bad"})
 
@@ -46,6 +53,7 @@ def test_add_validation_feedback_appends_to_existing_prompt() -> None:
 
 
 def test_add_validation_feedback_creates_prompt_when_missing() -> None:
+    """Creates a prompt when one is missing."""
     request = Request(payload={}, metadata={"trace_id": "t"})
     failure = Response(success=False, reason="schema_error", details={"error": "bad"})
 

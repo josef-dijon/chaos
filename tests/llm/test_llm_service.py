@@ -100,6 +100,7 @@ def test_llm_service_unknown_error_maps_internal_error(
 
 
 def test_llm_service_render_prompts_single_user() -> None:
+    """Renders prompts for a single user message."""
     service = LLMService()
 
     system_prompt, user_prompt = service._render_prompts(
@@ -111,6 +112,7 @@ def test_llm_service_render_prompts_single_user() -> None:
 
 
 def test_llm_service_render_prompts_multiturn() -> None:
+    """Renders prompts across multiple turns."""
     service = LLMService()
 
     system_prompt, user_prompt = service._render_prompts(
@@ -129,6 +131,7 @@ def test_llm_service_render_prompts_multiturn() -> None:
 
 
 def test_llm_service_render_prompts_ignores_empty_content() -> None:
+    """Skips empty content when rendering prompts."""
     service = LLMService()
 
     system_prompt, user_prompt = service._render_prompts(
@@ -144,6 +147,7 @@ def test_llm_service_render_prompts_ignores_empty_content() -> None:
 
 
 def test_llm_service_run_agent_happy_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Runs the agent and returns output + usage."""
     service = LLMService()
 
     class FakeUsage:
@@ -190,6 +194,7 @@ def test_llm_service_run_agent_happy_path(monkeypatch: pytest.MonkeyPatch) -> No
 def test_llm_service_run_agent_unexpected_output(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Raises when agent output is an unexpected type."""
     service = LLMService()
 
     class FakeResult:
@@ -217,6 +222,7 @@ def test_llm_service_run_agent_unexpected_output(
 
 
 def test_llm_error_mapper_http_status_error_429() -> None:
+    """Maps HTTP 429 errors to rate-limit errors."""
     try:
         import httpx
     except ImportError:  # pragma: no cover
@@ -233,6 +239,7 @@ def test_llm_error_mapper_http_status_error_429() -> None:
 
 
 def test_llm_error_mapper_unexpected_model_behavior_schema() -> None:
+    """Maps model behavior schema errors to schema_error."""
     try:
         from pydantic_ai import UnexpectedModelBehavior
     except ImportError:  # pragma: no cover
@@ -244,6 +251,7 @@ def test_llm_error_mapper_unexpected_model_behavior_schema() -> None:
 
 
 def test_llm_service_build_model_uses_model_builder() -> None:
+    """Uses the injected model builder when provided."""
     sentinel = object()
 
     from typing import cast
@@ -260,6 +268,7 @@ def test_llm_service_build_model_uses_model_builder() -> None:
 
 
 def test_llm_service_resolve_api_key() -> None:
+    """Resolves API keys from multiple input types."""
     assert LLMService._resolve_api_key(SecretStr("secret")) == "secret"
     assert LLMService._resolve_api_key("plain") == "plain"
     assert LLMService._resolve_api_key(123) == "123"
@@ -268,6 +277,7 @@ def test_llm_service_resolve_api_key() -> None:
 def test_llm_service_build_model_api_base_branch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Builds model with API base configured."""
     captured: dict = {}
 
     def fake_async_openai(**kwargs):
@@ -303,6 +313,7 @@ def test_llm_service_build_model_api_base_branch(
 def test_llm_service_build_model_api_key_branch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Builds model with API key configured."""
     captured: dict = {}
 
     def fake_async_openai(**kwargs):
@@ -335,6 +346,7 @@ def test_llm_service_build_model_api_key_branch(
 def test_llm_service_build_model_default_branch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Builds model without instantiating a client when no key."""
     captured: dict = {}
 
     def fake_model(model_name: str):
@@ -358,11 +370,13 @@ def test_llm_service_build_model_default_branch(
 
 
 def test_llm_error_mapper_api_key_message() -> None:
+    """Maps API key errors from message content."""
     mapping = map_llm_error(Exception("Invalid API key"))
     assert mapping.reason == "api_key_error"
 
 
 def test_llm_error_mapper_context_message() -> None:
+    """Maps context length errors from payloads."""
     try:
         import httpx
     except ImportError:  # pragma: no cover

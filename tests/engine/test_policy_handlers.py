@@ -16,6 +16,8 @@ class DummyBlock(Block):
 
 
 def test_policy_handler_repair_success():
+    """Executes repair policy successfully."""
+
     # Setup registry
     @RepairRegistry.register("fix_it")
     def fix_request(request: Request, failure: Response) -> Request:
@@ -38,6 +40,7 @@ def test_policy_handler_repair_success():
 
 
 def test_policy_handler_repair_not_found():
+    """Returns failure when repair function is missing."""
     block = DummyBlock("dummy")
     policy = RepairPolicy(repair_function="missing_func")
     failure = Response(success=False, reason="oops")
@@ -50,6 +53,7 @@ def test_policy_handler_repair_not_found():
 
 
 def test_policy_handler_debug():
+    """Returns a debug breakpoint response."""
     block = DummyBlock("dummy")
     policy = DebugPolicy()
     failure = Response(success=False, reason="oops")
@@ -62,6 +66,7 @@ def test_policy_handler_debug():
 
 
 def test_policy_handler_debug_includes_request_metadata() -> None:
+    """Preserves request metadata in debug responses."""
     block = DummyBlock("dummy")
     policy = DebugPolicy()
     failure = Response(success=False, reason="oops")
@@ -75,6 +80,7 @@ def test_policy_handler_debug_includes_request_metadata() -> None:
 
 
 def test_policy_handler_repair_merges_request_metadata_into_execution() -> None:
+    """Merges original metadata into repaired execution."""
     captured: dict = {}
 
     class CaptureBlock(Block):
@@ -105,6 +111,7 @@ def test_policy_handler_repair_merges_request_metadata_into_execution() -> None:
 
 
 def test_policy_handler_bubble():
+    """Bubbles failures without additional handling."""
     block = DummyBlock("dummy")
     # BubblePolicy defaults to BUBBLE type
     policy = BubblePolicy()  # type: ignore (Pydantic init)
@@ -126,6 +133,7 @@ def test_policy_handler_bubble():
 
 
 def test_policy_handler_unknown():
+    """Returns failure for unknown policy types."""
     # Test defensive coding for unknown policy types
     block = DummyBlock("dummy")
     # Use base class to avoid isinstance() matching specific subclasses

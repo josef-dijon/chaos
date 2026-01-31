@@ -3,6 +3,7 @@ from pathlib import Path
 
 
 def test_init_and_do_workflow(cli_runner, workspace, vcr_cassette):
+    """Runs init and do commands end-to-end."""
     # 1. Init
     result = cli_runner.invoke(app, ["init"])
     assert result.exit_code == 0

@@ -17,9 +17,7 @@ def memory_deps():
     identity = Identity.create_default("agent")
     with (
         patch("chaos.infra.memory_container.RawMemoryStore") as mock_raw,
-        patch(
-            "chaos.infra.memory_container.chromadb.PersistentClient"
-        ) as mock_chroma,
+        patch("chaos.infra.memory_container.chromadb.PersistentClient") as mock_chroma,
     ):
         config = MagicMock(spec=Config)
         config.get_raw_db_path.return_value = "/tmp/raw.db"
@@ -43,6 +41,7 @@ def memory_deps():
 
 
 def test_memory_container_init(memory_deps):
+    """Initializes memory container with raw and chroma stores."""
     mem = MemoryContainer(
         agent_id="agent",
         identity=memory_deps["identity"],
@@ -61,6 +60,7 @@ def test_memory_container_init(memory_deps):
 
 
 def test_record_event_updates_vector_store(memory_deps):
+    """Upserts embeddings and marks LTM as embedded."""
     mem = MemoryContainer(
         agent_id="agent",
         identity=memory_deps["identity"],
@@ -92,6 +92,7 @@ def test_record_event_updates_vector_store(memory_deps):
 
 
 def test_record_event_vector_store_error(memory_deps):
+    """Marks LTM as retry when vector store fails."""
     mem = MemoryContainer(
         agent_id="agent",
         identity=memory_deps["identity"],
@@ -140,6 +141,7 @@ def test_record_event_rejects_unknown_kind(memory_deps):
 
 
 def test_retrieve_for_personas(memory_deps):
+    """Retrieves results scoped by persona collections."""
     mem = MemoryContainer(
         agent_id="agent",
         identity=memory_deps["identity"],
@@ -180,6 +182,7 @@ def test_retrieve_for_personas(memory_deps):
 
 
 def test_finalize_loop_creates_summary(memory_deps):
+    """Creates STM summary for a completed loop."""
     mem = MemoryContainer(
         agent_id="agent",
         identity=memory_deps["identity"],
@@ -222,6 +225,7 @@ def test_finalize_loop_creates_summary(memory_deps):
 
 
 def test_finalize_loop_truncates_summary(memory_deps):
+    """Truncates STM summary to max lines."""
     mem = MemoryContainer(
         agent_id="agent",
         identity=memory_deps["identity"],
@@ -257,6 +261,7 @@ def test_finalize_loop_truncates_summary(memory_deps):
 
 
 def test_memory_container_close_calls_raw_store(memory_deps):
+    """Closes both raw and chroma resources."""
     mem = MemoryContainer(
         agent_id="agent",
         identity=memory_deps["identity"],
@@ -271,6 +276,7 @@ def test_memory_container_close_calls_raw_store(memory_deps):
 
 
 def test_finalize_loop_with_no_events(memory_deps):
+    """Skips STM creation when no events are present."""
     mem = MemoryContainer(
         agent_id="agent",
         identity=memory_deps["identity"],
@@ -284,6 +290,7 @@ def test_finalize_loop_with_no_events(memory_deps):
 
 
 def test_get_recent_stm_as_string(memory_deps):
+    """Formats recent STM entries for display."""
     mem = MemoryContainer(
         agent_id="agent",
         identity=memory_deps["identity"],
@@ -308,6 +315,7 @@ def test_get_recent_stm_as_string(memory_deps):
 
 
 def test_get_recent_stm_as_string_empty(memory_deps):
+    """Returns empty string when no STM entries exist."""
     mem = MemoryContainer(
         agent_id="agent",
         identity=memory_deps["identity"],
@@ -321,6 +329,7 @@ def test_get_recent_stm_as_string_empty(memory_deps):
 
 
 def test_retrieve_unknown_persona(memory_deps):
+    """Returns empty results for unknown personas."""
     mem = MemoryContainer(
         agent_id="agent",
         identity=memory_deps["identity"],
@@ -331,6 +340,7 @@ def test_retrieve_unknown_persona(memory_deps):
 
 
 def test_create_loop_id(memory_deps):
+    """Creates unique loop identifiers."""
     mem = MemoryContainer(
         agent_id="agent",
         identity=memory_deps["identity"],

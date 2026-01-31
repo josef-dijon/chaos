@@ -8,6 +8,7 @@ from chaos.infra.raw_memory_store import RawMemoryStore
 
 
 def test_raw_memory_store_records_events(tmp_path: Path) -> None:
+    """Records events and returns IDs from the raw store."""
     db_path = tmp_path / "raw.sqlite"
     with RawMemoryStore(db_path) as store:
         store._ensure_schema_version()
@@ -34,6 +35,7 @@ def test_raw_memory_store_records_events(tmp_path: Path) -> None:
 
 
 def test_raw_memory_store_stm_entries(tmp_path: Path) -> None:
+    """Creates and retrieves STM entries."""
     db_path = tmp_path / "raw.sqlite"
     with RawMemoryStore(db_path) as store:
         store.record_event(
@@ -84,6 +86,7 @@ def test_raw_memory_store_stm_entries(tmp_path: Path) -> None:
 
 
 def test_raw_memory_store_close(tmp_path: Path) -> None:
+    """Closes the underlying connection."""
     db_path = tmp_path / "raw.sqlite"
     store = RawMemoryStore(db_path)
     store.connection.close()
@@ -95,6 +98,7 @@ def test_raw_memory_store_close(tmp_path: Path) -> None:
 
 
 def test_raw_memory_store_empty_queries(tmp_path: Path) -> None:
+    """Returns empty lists for empty persona queries."""
     db_path = tmp_path / "raw.sqlite"
     with RawMemoryStore(db_path) as store:
         assert (
@@ -105,6 +109,7 @@ def test_raw_memory_store_empty_queries(tmp_path: Path) -> None:
 
 
 def test_raw_memory_store_embed_status_error(tmp_path: Path) -> None:
+    """Handles embed status updates after close."""
     db_path = tmp_path / "raw.sqlite"
     store = RawMemoryStore(db_path)
     store.close()

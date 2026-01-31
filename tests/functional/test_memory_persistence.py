@@ -2,6 +2,7 @@ from chaos.cli.main import app
 
 
 def test_memory_persistence(cli_runner, workspace, vcr_cassette):
+    """Persists memory across CLI sessions."""
     # Initialize
     cli_runner.invoke(app, ["init"])
 

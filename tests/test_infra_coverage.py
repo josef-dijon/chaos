@@ -10,6 +10,7 @@ from chaos.infra.memory import MemoryContainer
 @patch("chaos.infra.memory_container.RawMemoryStore")
 @patch("chaos.infra.memory_container.chromadb.PersistentClient")
 def test_memory_record_exception(mock_chroma, mock_raw):
+    """Return None when raw store writes fail."""
     config = MagicMock(spec=Config)
     config.get_raw_db_path.return_value = "/tmp/raw.db"
     config.get_chroma_db_path.return_value = "/tmp/chroma"
@@ -35,6 +36,7 @@ def test_memory_record_exception(mock_chroma, mock_raw):
 @patch("chaos.infra.memory_container.RawMemoryStore")
 @patch("chaos.infra.memory_container.chromadb.PersistentClient")
 def test_memory_retrieve_empty_and_exception(mock_chroma, mock_raw):
+    """Handle empty, missing, and failing retrievals gracefully."""
     config = MagicMock(spec=Config)
     config.get_raw_db_path.return_value = "/tmp/raw.db"
     config.get_chroma_db_path.return_value = "/tmp/chroma"

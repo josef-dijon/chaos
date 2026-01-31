@@ -12,6 +12,7 @@ runner = CliRunner()
 @patch("chaos.cli.main.Agent")
 @patch("pathlib.Path.exists")
 def test_init_creates_identity(mock_exists, mock_agent, mock_config_provider):
+    """Creates a new identity when none exists."""
     mock_exists.return_value = False
     mock_config_provider.return_value.load.return_value = Config(
         chaos_dir=Path(".chaos")
@@ -27,6 +28,7 @@ def test_init_creates_identity(mock_exists, mock_agent, mock_config_provider):
 @patch("chaos.cli.main.Agent")
 @patch("pathlib.Path.exists")
 def test_init_already_exists(mock_exists, mock_agent, mock_config_provider):
+    """Skips initialization when identity already exists."""
     mock_exists.return_value = True
     mock_config_provider.return_value.load.return_value = Config(
         chaos_dir=Path(".chaos")
@@ -41,6 +43,7 @@ def test_init_already_exists(mock_exists, mock_agent, mock_config_provider):
 @patch("chaos.cli.main.ConfigProvider")
 @patch("chaos.cli.main.Agent")
 def test_do(mock_agent, mock_config_provider):
+    """Routes CLI do command to the agent."""
     mock_config_provider.return_value.load.return_value = Config(
         chaos_dir=Path(".chaos")
     )
@@ -55,6 +58,7 @@ def test_do(mock_agent, mock_config_provider):
 @patch("chaos.cli.main.ConfigProvider")
 @patch("chaos.cli.main.Agent")
 def test_learn(mock_agent, mock_config_provider):
+    """Routes CLI learn command to the agent."""
     mock_config_provider.return_value.load.return_value = Config(
         chaos_dir=Path(".chaos")
     )
@@ -69,6 +73,7 @@ def test_learn(mock_agent, mock_config_provider):
 @patch("chaos.cli.main.ConfigProvider")
 @patch("chaos.cli.main.Agent")
 def test_dream(mock_agent, mock_config_provider):
+    """Routes CLI dream command to the agent."""
     mock_config_provider.return_value.load.return_value = Config(
         chaos_dir=Path(".chaos")
     )

@@ -4,6 +4,7 @@ from pathlib import Path
 
 
 def test_learning_circuit(cli_runner, workspace, vcr_cassette):
+    """Learns from feedback and updates behavior."""
     # Initialize
     cli_runner.invoke(app, ["init"])
 

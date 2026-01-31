@@ -52,6 +52,7 @@ class StubLLMService:
 
 
 def test_llm_primitive_initialization():
+    """Initializes LLMPrimitive with default state."""
     block = LLMPrimitive(
         name="test_llm",
         system_prompt="You are a bot",
@@ -65,6 +66,7 @@ def test_llm_primitive_initialization():
 
 
 def test_llm_primitive_happy_path():
+    """Returns successful response on valid payload."""
     block = LLMPrimitive(
         name="test_llm",
         system_prompt="sys",
@@ -80,6 +82,7 @@ def test_llm_primitive_happy_path():
 
 
 def test_llm_primitive_schema_error_policies():
+    """Uses bubble policy for schema errors."""
     policy_block = LLMPrimitive(
         name="test_llm",
         system_prompt="sys",
@@ -106,6 +109,7 @@ def test_llm_primitive_schema_error_policies():
 
 
 def test_llm_primitive_rate_limit_policies():
+    """Uses bubble policy for rate limit errors."""
     block = LLMPrimitive(
         name="test_llm",
         system_prompt="sys",
@@ -125,6 +129,7 @@ def test_llm_primitive_rate_limit_policies():
 
 
 def test_llm_primitive_auth_error_policies():
+    """Uses bubble policy for auth errors."""
     policy_block = LLMPrimitive(
         name="test_llm",
         system_prompt="sys",
@@ -151,6 +156,7 @@ def test_llm_primitive_auth_error_policies():
 
 
 def test_llm_primitive_rate_limit_mapping():
+    """Maps rate limits to failure responses."""
     block = LLMPrimitive(
         name="test_llm",
         system_prompt="sys",
@@ -173,6 +179,7 @@ def test_llm_primitive_rate_limit_mapping():
 
 
 def test_llm_primitive_includes_api_key():
+    """Propagates configured API key into requests."""
     captured: dict = {}
     config = Config.model_validate(
         {"openai_api_key": "test-key", "litellm_use_proxy": False}
@@ -195,6 +202,7 @@ def test_llm_primitive_includes_api_key():
 
 
 def test_llm_primitive_accepts_dict_content():
+    """Accepts dictionary content as prompt payload."""
     block = LLMPrimitive(
         name="test_llm",
         system_prompt="sys",
@@ -211,6 +219,7 @@ def test_llm_primitive_accepts_dict_content():
 
 
 def test_llm_primitive_invalid_payload_returns_failure():
+    """Fails with invalid payloads."""
     block = LLMPrimitive(
         name="test_llm",
         system_prompt="sys",
@@ -228,6 +237,7 @@ def test_llm_primitive_invalid_payload_returns_failure():
 
 
 def test_llm_primitive_context_length_mapping():
+    """Maps context-length failures to capacity errors."""
     block = LLMPrimitive(
         name="test_llm",
         system_prompt="sys",
@@ -293,6 +303,7 @@ def test_llm_primitive_estimate_execution_from_stats() -> None:
 
 
 def test_llm_primitive_records_llm_usage_in_attempt_record() -> None:
+    """Records usage stats in attempt record metadata."""
     store = InMemoryBlockStatsStore()
     set_default_store(store)
 

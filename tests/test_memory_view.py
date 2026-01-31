@@ -16,6 +16,7 @@ class DummyView(MemoryView):
 
 
 def test_memory_view_abstract_methods_raise() -> None:
+    """Raises NotImplementedError for abstract memory view methods."""
     view = DummyView()
 
     with pytest.raises(NotImplementedError):

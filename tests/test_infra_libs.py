@@ -14,6 +14,7 @@ from chaos.infra.tools import ToolLibrary, FileReadTool, FileWriteTool
 
 @patch("chaos.infra.knowledge.chromadb.PersistentClient")
 def test_knowledge_add_document(mock_chroma):
+    """Adds a document to the knowledge collection."""
     mock_collection = MagicMock()
     mock_chroma.return_value.get_or_create_collection.return_value = mock_collection
     config = MagicMock(spec=Config)
@@ -31,6 +32,7 @@ def test_knowledge_add_document(mock_chroma):
 
 @patch("chaos.infra.knowledge.chromadb.PersistentClient")
 def test_knowledge_search(mock_chroma):
+    """Searches knowledge with access control filters."""
     mock_collection = MagicMock()
     mock_chroma.return_value.get_or_create_collection.return_value = mock_collection
     mock_collection.query.return_value = {"documents": [["res1"]]}
@@ -57,6 +59,7 @@ def test_knowledge_search(mock_chroma):
 
 @patch("chaos.infra.knowledge.chromadb.PersistentClient")
 def test_knowledge_error_handling(mock_chroma):
+    """Swallows storage errors when adding knowledge."""
     mock_collection = MagicMock()
     mock_chroma.return_value.get_or_create_collection.return_value = mock_collection
     mock_collection.add.side_effect = Exception("db error")
@@ -72,6 +75,7 @@ def test_knowledge_error_handling(mock_chroma):
 
 
 def test_tool_library_registry():
+    """Registers tools and retrieves them by name."""
     lib = ToolLibrary()
     tool = FileReadTool(root=Path("."))
     lib.register(tool)
@@ -82,6 +86,7 @@ def test_tool_library_registry():
 
 
 def test_tool_library_filter():
+    """Filters tool lists via allow/deny lists."""
     lib = ToolLibrary()
     t1 = FileReadTool(root=Path("."))
     t2 = FileWriteTool(root=Path("."))
@@ -102,6 +107,7 @@ def test_tool_library_filter():
 @patch("pathlib.Path.stat")
 @patch("pathlib.Path.read_text")
 def test_file_read_tool(mock_read, mock_stat):
+    """Reads files while handling errors and limits."""
     tool = FileReadTool(root=Path("."))
     mock_stat.return_value = SimpleNamespace(st_size=MAX_READ_BYTES)
     mock_read.return_value = "content"
@@ -123,6 +129,7 @@ def test_file_read_tool(mock_read, mock_stat):
 
 @patch("pathlib.Path.stat")
 def test_file_read_tool_rejects_large_file(mock_stat):
+    """Rejects reads that exceed the size limit."""
     tool = FileReadTool(root=Path("."))
     mock_stat.return_value = SimpleNamespace(st_size=MAX_READ_BYTES + 1)
 
@@ -130,6 +137,7 @@ def test_file_read_tool_rejects_large_file(mock_stat):
 
 
 def test_file_write_tool(tmp_path):
+    """Writes files and validates inputs."""
     tool = FileWriteTool(root=tmp_path)
 
     # Success
@@ -146,6 +154,7 @@ def test_file_write_tool(tmp_path):
 
 
 def test_file_write_tool_rejects_large_content():
+    """Rejects writes when content exceeds size limits."""
     tool = FileWriteTool(root=Path("."))
     content = "a" * (MAX_WRITE_BYTES + 1)
 
@@ -154,6 +163,7 @@ def test_file_write_tool_rejects_large_content():
 
 @patch("chaos.infra.file_write_tool.tempfile.NamedTemporaryFile")
 def test_file_write_tool_handles_temp_error(mock_temp):
+    """Handles temp file creation errors gracefully."""
     tool = FileWriteTool(root=Path("."))
     mock_temp.side_effect = Exception("Error")
 

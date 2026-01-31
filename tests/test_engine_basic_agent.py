@@ -47,6 +47,7 @@ def mock_deps():
 @patch("chaos.engine.basic_agent.ChatOpenAI")
 @patch("chaos.engine.basic_agent.StateGraph")
 def test_init(mock_graph, mock_llm, mock_deps):
+    """Initializes the agent with graph and LLM dependencies."""
     agent = BasicAgent(**mock_deps)
     mock_llm.assert_called()
     mock_graph.assert_called()
@@ -55,6 +56,7 @@ def test_init(mock_graph, mock_llm, mock_deps):
 @patch("chaos.engine.basic_agent.ChatOpenAI")
 @patch("chaos.engine.basic_agent.StateGraph")
 def test_init_invalid_loop_definition(mock_graph, mock_llm, mock_deps):
+    """Rejects unsupported loop definitions."""
     mock_deps["identity"].loop_definition = "unsupported"
 
     with pytest.raises(ValueError, match="Unsupported loop definition"):
@@ -64,6 +66,7 @@ def test_init_invalid_loop_definition(mock_graph, mock_llm, mock_deps):
 @patch("chaos.engine.basic_agent.ChatOpenAI")
 @patch("chaos.engine.basic_agent.StateGraph")
 def test_should_continue(mock_graph, mock_llm, mock_deps):
+    """Determines whether to continue based on tool calls."""
     agent = BasicAgent(**mock_deps)
 
     msg_with_tool = AIMessage(
@@ -80,6 +83,7 @@ def test_should_continue(mock_graph, mock_llm, mock_deps):
 @patch("chaos.engine.basic_agent.ChatOpenAI")
 @patch("chaos.engine.basic_agent.StateGraph")
 def test_recall(mock_graph, mock_llm, mock_deps):
+    """Builds context from memory and knowledge sources."""
     mock_deps["memory"].retrieve.return_value = "Memory 1"
     mock_deps["knowledge_lib"].search.return_value = "Knowledge 1"
 
@@ -107,6 +111,7 @@ def test_recall(mock_graph, mock_llm, mock_deps):
 @patch("chaos.engine.basic_agent.ChatOpenAI")
 @patch("chaos.engine.basic_agent.StateGraph")
 def test_recall_subconscious_full_access(mock_graph, mock_llm, mock_deps):
+    """Ignores knowledge filters for subconscious persona."""
     mock_deps["identity"].knowledge_whitelist = ["restricted"]
     mock_deps["identity"].knowledge_blacklist = ["blocked"]
     mock_deps["memory"].retrieve.return_value = "Memory 1"
@@ -131,6 +136,7 @@ def test_recall_subconscious_full_access(mock_graph, mock_llm, mock_deps):
 @patch("chaos.engine.basic_agent.ChatOpenAI")
 @patch("chaos.engine.basic_agent.StateGraph")
 def test_reason_logic(mock_graph, mock_llm, mock_deps):
+    """Constructs prompts and invokes the LLM with tools."""
     # Setup
     mock_deps["identity"].tool_manifest = ["test_tool"]
     mock_deps["identity"].resolve_tool_whitelist.return_value = ["test_tool"]
@@ -197,6 +203,7 @@ def test_reason_logic(mock_graph, mock_llm, mock_deps):
 @patch("chaos.engine.basic_agent.ChatOpenAI")
 @patch("chaos.engine.basic_agent.StateGraph")
 def test_act(mock_graph, mock_llm, mock_deps):
+    """Executes tool calls and returns tool messages."""
     agent = BasicAgent(**mock_deps)
 
     mock_tool = MagicMock()
@@ -220,6 +227,7 @@ def test_act(mock_graph, mock_llm, mock_deps):
 @patch("chaos.engine.basic_agent.ChatOpenAI")
 @patch("chaos.engine.basic_agent.StateGraph")
 def test_act_tool_error(mock_graph, mock_llm, mock_deps):
+    """Captures tool execution errors in messages."""
     agent = BasicAgent(**mock_deps)
 
     mock_tool = MagicMock()
@@ -239,6 +247,7 @@ def test_act_tool_error(mock_graph, mock_llm, mock_deps):
 @patch("chaos.engine.basic_agent.ChatOpenAI")
 @patch("chaos.engine.basic_agent.StateGraph")
 def test_execute(mock_graph, mock_llm, mock_deps):
+    """Runs the agent loop and returns the final response."""
     agent = BasicAgent(**mock_deps)
 
     mock_builder = mock_graph.return_value

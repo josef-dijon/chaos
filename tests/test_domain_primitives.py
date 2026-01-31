@@ -6,6 +6,7 @@ from chaos.domain.tool import BaseTool, ToolType
 
 
 def test_knowledge_item_creation():
+    """Creates a knowledge item with defaults."""
     item = KnowledgeItem(id="k1", content="Some knowledge")
     assert item.id == "k1"
     assert item.content == "Some knowledge"
@@ -14,6 +15,7 @@ def test_knowledge_item_creation():
 
 
 def test_knowledge_item_full_creation():
+    """Creates a knowledge item with tags and metadata."""
     item = KnowledgeItem(
         id="k2",
         content="More knowledge",
@@ -27,6 +29,8 @@ def test_knowledge_item_full_creation():
 
 
 def test_base_tool_instantiation():
+    """Instantiates a concrete BaseTool implementation."""
+
     # BaseTool is abstract, so we must implement it to test it
     @dataclass
     class ConcreteTool(BaseTool):
@@ -48,6 +52,7 @@ def test_base_tool_instantiation():
 
 
 def test_base_tool_cannot_instantiate_abstract():
+    """Rejects instantiation of abstract BaseTool."""
     # Attempting to instantiate BaseTool directly should fail or be impossible
     # Python's ABCMeta prevents instantiation of classes with abstract methods
     with pytest.raises(TypeError):

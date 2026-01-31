@@ -29,6 +29,7 @@ class MetadataEchoBlock(Block):
 
 
 def test_block_initialization():
+    """Initializes a basic block with default state and policy."""
     block = SimpleBlock(name="test_block")
     assert block.name == "test_block"
     assert block.state == BlockState.READY
@@ -36,6 +37,7 @@ def test_block_initialization():
 
 
 def test_request_response_flow():
+    """Executes a block and returns response payload."""
     block = SimpleBlock(name="echo")
     req = Request(payload={"value": 42})
     resp = block.execute(req)
@@ -46,12 +48,14 @@ def test_request_response_flow():
 
 
 def test_request_generates_id():
+    """Generates a request id when missing."""
     req = Request()
 
     assert req.metadata["id"]
 
 
 def test_request_preserves_id_across_execute():
+    """Preserves provided request ids through execution."""
     block = MetadataEchoBlock(name="meta")
     req = Request(metadata={"id": "request-id"})
 
@@ -72,6 +76,7 @@ def test_request_id_factory_override() -> None:
 
 
 def test_failure_response_structure():
+    """Preserves failure metadata and details."""
     fail = Response(success=False, reason="Something went wrong", details={"code": 500})
     assert fail.reason == "Something went wrong"
     assert fail.details["code"] == 500
@@ -79,6 +84,7 @@ def test_failure_response_structure():
 
 
 def test_base_metadata_is_populated_on_request():
+    """Populates default trace metadata on execution."""
     block = MetadataEchoBlock(name="meta")
 
     resp = block.execute(Request())
@@ -94,6 +100,7 @@ def test_base_metadata_is_populated_on_request():
 
 
 def test_side_effect_class_normalization():
+    """Normalizes unknown side effect classes to non-idempotent."""
     block = MetadataEchoBlock(name="meta", side_effect_class="unknown")
 
     assert block.side_effect_class == SideEffectClass.NON_IDEMPOTENT

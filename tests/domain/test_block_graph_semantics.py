@@ -112,6 +112,7 @@ class GraphBuilderBlock(Block):
 
 
 def test_composite_max_steps_exceeded():
+    """Fails when composite exceeds max step count."""
     child = AlwaysSuccessBlock("A")
     composite = CompositeBlockStub(
         "composite",
@@ -251,6 +252,7 @@ def test_retry_delay_is_applied(monkeypatch):
 
 
 def test_build_sets_graph_and_executes():
+    """Build hooks set graph configuration before execution."""
     composite = GraphBuilderBlock("composite")
 
     response = composite.execute(Request())
@@ -261,6 +263,7 @@ def test_build_sets_graph_and_executes():
 
 
 def test_invalid_transition_config_returns_failure():
+    """Rejects invalid transition configurations."""
     block_a = AlwaysSuccessBlock("A")
     composite = CompositeBlockStub(
         "composite",
@@ -276,6 +279,7 @@ def test_invalid_transition_config_returns_failure():
 
 
 def test_repair_increments_attempt_and_uses_child_envelope() -> None:
+    """Tracks repair attempts and uses child metadata."""
     captured: dict = {}
 
     @RepairRegistry.register("fix_it")

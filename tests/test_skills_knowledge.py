@@ -4,6 +4,7 @@ from chaos.infra.skills import SkillsLibrary
 
 
 def test_skills_filtering():
+    """Filters skills using whitelist/blacklist inputs."""
     lib = SkillsLibrary()
     # Add custom skills
     lib.register(Skill(name="coding", description="...", content="..."))

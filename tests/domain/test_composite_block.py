@@ -38,6 +38,7 @@ class CompositeBlockStub(Block):
 
 
 def test_composite_simple_execution():
+    """Executes a composite block with a single child."""
     child = MockBlock("child")
     composite = CompositeBlockStub(
         "composite", nodes={"child": child}, entry_point="child"
@@ -55,6 +56,7 @@ def test_composite_simple_execution():
 
 
 def test_composite_retry_success():
+    """Retries a child until success within max attempts."""
     # Child fails twice then succeeds
     child = MockBlock("child", fail_count=2)
     child.policies = [RetryPolicy(max_attempts=3)]
@@ -70,6 +72,7 @@ def test_composite_retry_success():
 
 
 def test_composite_retry_exhausted():
+    """Stops after retry attempts are exhausted."""
     # Child always fails
     child = MockBlock("child", should_fail=True)
     child.policies = [RetryPolicy(max_attempts=2)]
@@ -85,6 +88,7 @@ def test_composite_retry_exhausted():
 
 
 def test_composite_bubble():
+    """Bubbles failure response with bubble policy."""
     child = MockBlock("child", should_fail=True)
     child.policies = [BubblePolicy()]
 
@@ -99,6 +103,7 @@ def test_composite_bubble():
 
 
 def test_composite_config_error():
+    """Fails fast when graph configuration is invalid."""
     composite = CompositeBlockStub("composite", nodes={}, entry_point="missing_child")
     response = composite.execute(Request())
     assert response.success is False
@@ -106,6 +111,7 @@ def test_composite_config_error():
 
 
 def test_composite_linear_flow():
+    """Executes a linear composite transition graph."""
     # A -> B -> End
     block_a = MockBlock("A")
     block_b = MockBlock("B")
@@ -128,6 +134,7 @@ def test_composite_linear_flow():
 
 
 def test_composite_branching_flow():
+    """Routes execution based on branching conditions."""
     # A -> (val > 10) -> B
     #   -> (default) -> C
 
