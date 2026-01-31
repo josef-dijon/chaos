@@ -7,6 +7,7 @@ This is the entry point for all project documentation. Use the section indexes b
 - [Architecture](architecture/index.md): Source of truth for system architecture.
 - [Developer](dev/index.md): Developer workflows, standards, and tooling.
 - [Planning](planning/index.md): Planning docs and execution checklists.
+- [Reviews](reviews/index.md): Review reports and findings.
 
 ## Roadmap
 - [Agentic Roadmap](architecture/agentic/agentic-roadmap.md)

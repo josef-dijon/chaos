@@ -6,6 +6,8 @@ Planning artifacts used to structure and track work across features and migratio
 ## In Progress
 - [Block Plan](block-plan.md)
 - [Block Checklist](block-checklist.md)
+- [LLM Primitive Review Remediation Plan](llm-primitive-review-remediation-plan.md)
+- [LLM Primitive Review Remediation Checklist](llm-primitive-review-remediation-checklist.md)
 - [Block Architecture Docs Expansion Plan](block-architecture-docs-expansion-plan.md)
 - [Block Architecture Docs Expansion Checklist](block-architecture-docs-expansion-checklist.md)
 - [Block Runtime Implementation Plan](block-runtime-implementation-plan.md)
@@ -22,6 +24,10 @@ Planning artifacts used to structure and track work across features and migratio
 - [Tuning Policy Checklist](tuning-policy-checklist.md)
 - [PydanticAI Migration Plan](pydanticai-migration-plan.md)
 - [PydanticAI Migration Checklist](pydanticai-migration-checklist.md)
+- [Python Review Agent Plan](python-review-agent-plan.md)
+- [Python Review Agent Checklist](python-review-agent-checklist.md)
+- [Python Review Orchestrator Rework Plan](python-review-orchestrator-plan.md)
+- [Python Review Orchestrator Rework Checklist](python-review-orchestrator-checklist.md)
 
 ## Complete
 - [Architecture Docs Migration Plan](architecture-docs-migration-plan-complete.md)

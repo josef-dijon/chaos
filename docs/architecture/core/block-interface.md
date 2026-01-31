@@ -31,6 +31,9 @@ The system uses a unified object model where **everything is a Block**.
 | BUSY | Currently executing | `execute` begins | Success or failure response |
 | WAITING | Failed and awaiting recovery | Failure response | Recovery or explicit re-execution |
 
+Implementation note:
+- The base `Block` sets `state` during execution but does not enforce it as a hard guard. State is currently informational and may be used by callers for re-entrancy checks or monitoring.
+
 Note: The architecture currently treats `WAITING` as a placeholder for "execution cannot proceed without an explicit recovery/resume action". The full semantics (when it is entered, what is persisted, and how resumption works) are tracked in:
 - [Block Architecture Open Questions](block-open-questions.md)
 
@@ -53,7 +56,7 @@ Canonical request and metadata conventions are defined in:
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `payload` | any | Block-specific input data. |
+| `payload` | Any | Block-specific input data. |
 | `context` | dict | Pruned context and shared state relevant to the block. |
 | `metadata` | dict | Execution metadata (trace ids, policy hints, timing). |
 

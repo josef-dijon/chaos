@@ -22,13 +22,14 @@ Fields:
 
 | Field | Type | Meaning |
 | --- | --- | --- |
-| `payload` | any | Block-specific input. The receiving block defines the expected shape. |
+| `payload` | Any | Block-specific input. The receiving block defines the expected shape. |
 | `context` | dict | Pruned shared state relevant to the receiving block. The caller decides what to include. |
 | `metadata` | dict | Execution metadata (tracing, attempt counters, policy hints). |
 
 Requirements:
 - A block MUST treat `payload`, `context`, and `metadata` as read-only inputs. If a block needs to "change" inputs, it must do so by creating a new request (for example during repair).
-- A caller constructing a child request MUST prune `context` to the minimum necessary for the child.
+- The caller constructing a child request MUST prune `context` to the minimum necessary for the child. Base block utilities do not prune automatically.
+- Every request MUST include a unique `metadata["id"]`. If the caller omits it, the Request constructor (or request factory) MUST generate one.
 
 ### Metadata Conventions
 Metadata exists to support observability, reproducibility, and recovery.
@@ -46,7 +47,7 @@ These keys MAY appear in request and/or response metadata.
 
 | Key | Type | Meaning |
 | --- | --- | --- |
-| `id` | str | Identifier for the request/response envelope. If present, MUST be globally unique enough for tracing/debugging (UUID recommended). |
+| `id` | str | Identifier for the request/response envelope. MUST be globally unique enough for tracing/debugging (UUID recommended). |
 | `trace_id` | str | Correlates all attempts within a single end-to-end operation (root run). |
 | `span_id` | str | Correlates a single attempt of a single block execution. |
 | `parent_span_id` | str | The parent span for nesting; empty/absent for the root attempt. |
@@ -55,7 +56,7 @@ These keys MAY appear in request and/or response metadata.
 | `node_name` | str | The composite node name used to execute a child (only applicable in composites). |
 | `attempt` | int | 1-based attempt counter for retries/repairs of the same block/node within a run. |
 | `created_at` | str | Envelope creation time (ISO-8601). |
-| `duration_ms` | int | Execution duration in milliseconds (responses only). |
+| `duration_ms` | float | Execution duration in milliseconds (responses only). |
 | `side_effect_class` | str | Optional side-effect classification (`none`, `idempotent`, `non_idempotent`). |
 
 Notes:
@@ -76,12 +77,13 @@ When a composite block constructs a child request, it SHOULD apply the following
 - `attempt`: initialize to 1 on first execution; increment on retry/repair attempts of the same node.
 - `block_name`: set to the child block's name (do not inherit the parent value).
 - `node_name`: set to the composite node name used to select the child.
-- `id`: generate a new envelope id for the child request.
+- `id`: always generate a new envelope id for the child request.
 
 ### Response Metadata
 Responses SHOULD include enough metadata to correlate outcomes back to the attempt that produced them.
 
 Recommended minimum response keys:
+- `id`
 - `trace_id`
 - `span_id`
 - `block_name`

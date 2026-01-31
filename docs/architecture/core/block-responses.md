@@ -32,6 +32,7 @@ Blocks return a single `Response` object instead of raising control-flow excepti
 Notes:
 - `reason` is intended for humans and diagnostics; it must not be used as the canonical selector for recovery.
 - `error_type` is the canonical selector for recovery policy lookup.
+- The canonical field name is `success`. Responses MUST NOT use `ok` as a public field name in the architecture contract.
 
 #### Response Helpers
 
