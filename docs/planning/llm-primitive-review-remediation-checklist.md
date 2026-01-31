@@ -69,7 +69,7 @@ Draft
 ### DRY, naming, and API cleanup
 - [ ] Refactor `Block._execute_child_with_recovery` into smaller helpers.
 - [ ] Extract a single unsafe-to-retry helper used by both RetryPolicy and RepairPolicy branches.
-- [ ] Remove `src/chaos/llm/model_selector.py` if it is still a no-op; update call sites and delete/update `tests/llm/test_model_selector.py`.
+- [x] Remove `src/chaos/llm/model_selector.py` if it is still a no-op; update call sites and delete/update `tests/llm/test_model_selector.py`.
 - [ ] Remove redundant `LLMPrimitive.get_policy_stack` override if it matches the base behavior.
 - [ ] Rename `manager_id` to `execution_id` (or `correlation_id`) consistently across `LLMPrimitive`, `LLMRequest`, and metadata.
 - [ ] Remove duplicated sources of truth for attempt/execution ids (single authoritative location).

@@ -23,7 +23,6 @@ from chaos.llm.llm_executor import LLMExecutor
 from chaos.llm.llm_request import LLMRequest
 from chaos.llm.llm_response import LLMResponse
 from chaos.llm.llm_service import LLMService
-from chaos.llm.model_selector import ModelSelector
 from chaos.llm.response_status import ResponseStatus
 from chaos.stats.block_attempt_record import BlockAttemptRecord
 from chaos.stats.block_stats_identity import BlockStatsIdentity
@@ -43,7 +42,6 @@ class LLMPrimitive(Block):
         config: Optional[Config] = None,
         stats_adapter: Optional[LiteLLMStatsAdapter] = None,
         llm_service: Optional[LLMExecutor] = None,
-        model_selector: Optional[ModelSelector] = None,
         output_retries: int = 2,
     ):
         """Initialize the LLM primitive.
@@ -57,7 +55,6 @@ class LLMPrimitive(Block):
             config: Optional Config instance for provider settings.
             stats_adapter: Optional stats adapter for LLM estimation.
             llm_service: Optional LLM executor override.
-            model_selector: Optional model selector override.
             output_retries: Number of PydanticAI output validation retries.
         """
         self._config = config or Config()
@@ -71,7 +68,6 @@ class LLMPrimitive(Block):
         self._llm_service: LLMExecutor = llm_service or LLMService(
             output_retries=output_retries
         )
-        self._model_selector = model_selector or ModelSelector()
 
     def build(self) -> None:
         """Atomic blocks do not have a graph."""
@@ -85,7 +81,7 @@ class LLMPrimitive(Block):
             return self._failure_response("invalid_payload", exc, SchemaError)
 
         messages = self._build_messages(prompt)
-        model = self._model_selector.select_model(request, self._model)
+        model = self._model
         manager_id = self._build_manager_id()
         api_base, api_key = self._resolve_api_settings()
 

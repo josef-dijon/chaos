@@ -295,20 +295,11 @@ def test_llm_primitive_records_llm_usage_in_attempt_record() -> None:
     store = InMemoryBlockStatsStore()
     set_default_store(store)
 
-    class StaticModelSelector:
-        def select_model(self, request: Request, default_model: str) -> str:
-            return "selected-model"
-
-    from typing import cast
-
-    from chaos.llm.model_selector import ModelSelector
-
     block = LLMPrimitive(
         name="test_llm",
         system_prompt="sys",
         output_data_model=MockSchema,
         model="default-model",
-        model_selector=cast(ModelSelector, StaticModelSelector()),
         llm_service=StubLLMService(
             LLMResponse.success(
                 data={"response": "ok"},
@@ -324,7 +315,7 @@ def test_llm_primitive_records_llm_usage_in_attempt_record() -> None:
     assert response.metadata["llm.retry_count"] == 2
 
     record = store._records[-1]
-    assert record.model == "selected-model"
+    assert record.model == "default-model"
     assert record.llm_calls == 3
     assert record.input_tokens == 10
     assert record.output_tokens == 20
