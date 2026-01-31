@@ -2,8 +2,9 @@ import pytest
 
 from chaos.domain.block import Block
 from chaos.domain.messages import Request, Response
-from chaos.domain.policy import RecoveryPolicy, RetryPolicy
+from chaos.domain.policy import BubblePolicy, RecoveryPolicy, RepairPolicy, RetryPolicy
 from chaos.engine.conditions import ConditionRegistry
+from chaos.engine.registry import RepairRegistry
 
 
 class AlwaysSuccessBlock(Block):
@@ -40,6 +41,28 @@ class AlwaysFailBlock(Block):
 
 
 class CompositeBlockStub(Block):
+    def build(self) -> None:
+        pass
+
+
+class RepairableBlock(Block):
+    """A leaf block that can be repaired by setting payload.fixed=True."""
+
+    def __init__(self, name: str):
+        super().__init__(name=name, side_effect_class="idempotent")
+        self.seen_attempts: list[int] = []
+        self.seen_node_names: list[str] = []
+
+    def _execute_primitive(self, request: Request):
+        self.seen_attempts.append(int(request.metadata.get("attempt", 0)))
+        self.seen_node_names.append(str(request.metadata.get("node_name", "")))
+        if request.payload.get("fixed") is True:
+            return Response(success=True, data="fixed")
+        return Response(success=False, reason="fail")
+
+    def get_policy_stack(self, error_type) -> list[RecoveryPolicy]:
+        return [RepairPolicy(repair_function="fix_it"), BubblePolicy()]
+
     def build(self) -> None:
         pass
 
@@ -142,3 +165,35 @@ def test_invalid_transition_config_returns_failure():
 
     assert response.success() is False
     assert response.reason == "invalid_graph"
+
+
+def test_repair_increments_attempt_and_uses_child_envelope() -> None:
+    captured: dict = {}
+
+    @RepairRegistry.register("fix_it")
+    def fix_request(request: Request, failure: Response) -> Request:
+        captured["attempt"] = request.metadata.get("attempt")
+        captured["node_name"] = request.metadata.get("node_name")
+        new_payload = dict(request.payload)
+        new_payload["fixed"] = True
+        return Request(payload=new_payload)
+
+    try:
+        child = RepairableBlock("child")
+        composite = CompositeBlockStub(
+            "composite", nodes={"child": child}, entry_point="child"
+        )
+
+        response = composite.execute(Request())
+
+        assert response.success() is True
+        assert response.data == "fixed"
+        assert child.seen_attempts == [1, 2]
+        assert captured["attempt"] == 1
+        assert captured["node_name"] == "child"
+        assert response.metadata.get("attempt") == 2
+        assert response.metadata.get("node_name") == "child"
+        assert "trace_id" in response.metadata
+        assert "span_id" in response.metadata
+    finally:
+        RepairRegistry.clear()

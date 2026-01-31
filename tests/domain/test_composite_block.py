@@ -49,6 +49,9 @@ def test_composite_simple_execution():
     assert response.success() is True
     assert response.data == "Success"
     assert child.attempts == 1
+    assert "trace_id" in response.metadata
+    assert "span_id" in response.metadata
+    assert response.metadata.get("attempt") == 1
 
 
 def test_composite_retry_success():
@@ -120,6 +123,8 @@ def test_composite_linear_flow():
     assert block_a.attempts == 1
     assert block_b.attempts == 1
     assert response.metadata["last_node"] == "B"
+    assert "trace_id" in response.metadata
+    assert "span_id" in response.metadata
 
 
 def test_composite_branching_flow():

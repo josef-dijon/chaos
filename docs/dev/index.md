@@ -5,6 +5,7 @@ Guidance for working in this repository, including workflows, tooling, and stand
 
 ## Index
 - [Ideations](ideations.md): Scratchpad and exploratory notes.
+- [LLM Primitive + Block Code Audit](llm-primitive-block-audit.md): Review findings and prioritized remediation recommendations.
 
 ## Roadmap
 - None yet.

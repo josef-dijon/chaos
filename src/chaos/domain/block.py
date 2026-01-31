@@ -5,10 +5,17 @@ from uuid import uuid4
 
 from chaos.domain.block_estimate import BlockEstimate
 from chaos.domain.messages import Request, Response
-from chaos.domain.policy import BubblePolicy, RecoveryPolicy, RecoveryType, RetryPolicy
+from chaos.domain.policy import (
+    BubblePolicy,
+    RecoveryPolicy,
+    RecoveryType,
+    RepairPolicy,
+    RetryPolicy,
+)
 from chaos.domain.state import BlockState
 from chaos.engine.conditions import ConditionRegistry
 from chaos.engine.policy_handlers import PolicyHandler
+from chaos.engine.registry import RepairRegistry
 from chaos.stats.block_attempt_record import BlockAttemptRecord
 from chaos.stats.block_stats_identity import BlockStatsIdentity
 from chaos.stats.store_registry import get_default_store
@@ -135,6 +142,7 @@ class Block(ABC):
             self._state = BlockState.READY
             duration_ms = (perf_counter() - start_time) * 1000
             if response is not None:
+                self._attach_correlation_metadata(request_for_execution, response)
                 response.metadata["duration_ms"] = duration_ms
                 self._record_attempt(
                     request=request_for_execution,
@@ -225,7 +233,16 @@ class Block(ABC):
                     condition_name = branch.get("condition", "default")
                     target = branch.get("target")
 
-                    condition_func = ConditionRegistry.get(condition_name)
+                    try:
+                        condition_func = ConditionRegistry.get(condition_name)
+                    except ValueError as exc:
+                        return Response(
+                            success=False,
+                            reason="condition_resolution_error",
+                            details={"error": str(exc), "condition": condition_name},
+                            error_type=Exception,
+                        )
+
                     if condition_func(response):
                         next_node_name = target
                         break
@@ -243,15 +260,14 @@ class Block(ABC):
                 # Optional: Update metadata to trace path
             else:
                 # Terminal state
-                return Response(
-                    success=True,
-                    data=response.data,
-                    metadata={
-                        "source": node.name,
-                        "composite": self.name,
-                        "last_node": current_node_name,
-                    },
-                )
+                final = response.model_copy(deep=True)
+                final.metadata = {
+                    **dict(final.metadata or {}),
+                    "source": node.name,
+                    "composite": self.name,
+                    "last_node": current_node_name,
+                }
+                return final
 
         return Response(
             success=False,
@@ -283,6 +299,7 @@ class Block(ABC):
             node_name=node_name,
             attempt=attempt,
         )
+        last_child_request = child_request
         response = node.execute(child_request)
 
         if response.success() is True:
@@ -294,7 +311,7 @@ class Block(ABC):
         current_failure: Response = response
 
         for policy in policies:
-            if policy.type == RecoveryType.RETRY:
+            if isinstance(policy, RetryPolicy):
                 if not self._is_recoverable_via_retry(node):
                     return Response(
                         success=False,
@@ -302,8 +319,7 @@ class Block(ABC):
                         details={"side_effect_class": node.side_effect_class},
                         error_type=Exception,
                     )
-                retry_policy: RetryPolicy = policy  # type: ignore
-                for _ in range(retry_policy.max_attempts):
+                for _ in range(policy.max_attempts):
                     attempt += 1
                     retry_request = self._build_child_request(
                         parent_request=request,
@@ -311,23 +327,54 @@ class Block(ABC):
                         node_name=node_name,
                         attempt=attempt,
                     )
+                    last_child_request = retry_request
                     retry_response = node.execute(retry_request)
                     if retry_response.success() is True:
                         return retry_response
                     current_failure = retry_response
-            else:
-                if (
-                    policy.type == RecoveryType.REPAIR
-                    and not self._is_recoverable_via_retry(node)
-                ):
+            elif isinstance(policy, RepairPolicy):
+                if not self._is_recoverable_via_retry(node):
                     return Response(
                         success=False,
                         reason="unsafe_to_retry",
                         details={"side_effect_class": node.side_effect_class},
                         error_type=Exception,
                     )
+
+                try:
+                    repair_func = RepairRegistry.get(policy.repair_function)
+                except Exception as exc:
+                    return Response(
+                        success=False,
+                        reason="repair_execution_failed",
+                        details={
+                            "repair_function": policy.repair_function,
+                            "error": str(exc),
+                        },
+                        error_type=Exception,
+                    )
+
+                repaired = repair_func(last_child_request, current_failure)
+                attempt += 1
+
+                repaired_parent_request = request.model_copy(deep=True)
+                repaired_parent_request.payload = repaired.payload
+                repaired_parent_request.context = repaired.context
+
+                repaired_attempt_request = self._build_child_request(
+                    parent_request=repaired_parent_request,
+                    child=node,
+                    node_name=node_name,
+                    attempt=attempt,
+                )
+                last_child_request = repaired_attempt_request
+                repaired_response = node.execute(repaired_attempt_request)
+                if repaired_response.success() is True:
+                    return repaired_response
+                current_failure = repaired_response
+            else:
                 policy_response = PolicyHandler.handle(
-                    policy, node, request, current_failure
+                    policy, node, last_child_request, current_failure
                 )
                 if policy_response.success() is True:
                     return policy_response
@@ -496,6 +543,28 @@ class Block(ABC):
         md.setdefault("block_name", self.name)
         md.setdefault("attempt", 1)
         return cloned
+
+    def _attach_correlation_metadata(
+        self, request: Request, response: Response
+    ) -> None:
+        """Ensure response metadata contains attempt correlation fields.
+
+        Args:
+            request: The request that drove this specific attempt.
+            response: The response produced by this attempt.
+        """
+
+        for key in (
+            "trace_id",
+            "run_id",
+            "span_id",
+            "parent_span_id",
+            "attempt",
+            "block_name",
+            "node_name",
+        ):
+            if key in request.metadata:
+                response.metadata.setdefault(key, request.metadata[key])
 
     def _build_child_request(
         self,

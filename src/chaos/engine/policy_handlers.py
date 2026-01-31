@@ -31,7 +31,7 @@ class PolicyHandler:
         elif isinstance(policy, RepairPolicy):
             return PolicyHandler.repair(policy, block, request, failure)
         elif isinstance(policy, DebugPolicy):
-            return PolicyHandler.debug(policy, failure)
+            return PolicyHandler.debug(policy, request, failure)
         elif isinstance(policy, BubblePolicy):
             return PolicyHandler.bubble(failure)
         else:
@@ -42,7 +42,7 @@ class PolicyHandler:
             if policy.type == RecoveryType.REPAIR:
                 return PolicyHandler.repair(policy, block, request, failure)  # type: ignore
             if policy.type == RecoveryType.DEBUG:
-                return PolicyHandler.debug(policy, failure)  # type: ignore
+                return PolicyHandler.debug(policy, request, failure)  # type: ignore
             if policy.type == RecoveryType.BUBBLE:
                 return PolicyHandler.bubble(failure)
 
@@ -74,8 +74,13 @@ class PolicyHandler:
         """Apply a repair function to the request and re-execute."""
         try:
             repair_func = RepairRegistry.get(policy.repair_function)
-            new_request = repair_func(request, failure)
-            return block.execute(new_request)
+            repaired_request = repair_func(request, failure)
+            merged = repaired_request.model_copy(deep=True)
+            merged.metadata = {
+                **dict(request.metadata or {}),
+                **dict(repaired_request.metadata or {}),
+            }
+            return block.execute(merged)
         except Exception as e:
             return Response(
                 success=False,
@@ -84,13 +89,18 @@ class PolicyHandler:
             )
 
     @staticmethod
-    def debug(policy: DebugPolicy, failure: Response) -> Response:
-        """Enter debug mode (stub)."""
+    def debug(policy: DebugPolicy, request: Request, failure: Response) -> Response:
+        """Enter debug mode (stub).
+
+        The returned response includes enough metadata to correlate the debug event
+        to the attempt that produced the failure.
+        """
         # In a real CLI, this might drop into a pdb shell or wait for user input
         return Response(
             success=False,
             reason="debug_breakpoint_hit",
             details={"original_error": failure.model_dump()},
+            metadata=dict(request.metadata or {}),
         )
 
     @staticmethod

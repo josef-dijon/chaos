@@ -61,6 +61,49 @@ def test_policy_handler_debug():
     assert response.details["original_error"]["reason"] == "oops"
 
 
+def test_policy_handler_debug_includes_request_metadata() -> None:
+    block = DummyBlock("dummy")
+    policy = DebugPolicy()
+    failure = Response(success=False, reason="oops")
+    request = Request(metadata={"trace_id": "t", "span_id": "s", "attempt": 3})
+
+    response = PolicyHandler.handle(policy, block, request, failure)
+
+    assert response.metadata["trace_id"] == "t"
+    assert response.metadata["span_id"] == "s"
+    assert response.metadata["attempt"] == 3
+
+
+def test_policy_handler_repair_merges_request_metadata_into_execution() -> None:
+    captured: dict = {}
+
+    class CaptureBlock(Block):
+        def build(self) -> None:
+            pass
+
+        def _execute_primitive(self, request: Request):
+            captured.update(request.metadata)
+            return Response(success=True, data="ok")
+
+    @RepairRegistry.register("fix_payload")
+    def fix_request(request: Request, failure: Response) -> Request:
+        return Request(payload={"fixed": True})
+
+    try:
+        block = CaptureBlock("cap")
+        policy = RepairPolicy(repair_function="fix_payload")
+        failure = Response(success=False, reason="oops")
+        request = Request(metadata={"trace_id": "t", "run_id": "r"})
+
+        response = PolicyHandler.handle(policy, block, request, failure)
+
+        assert response.success() is True
+        assert captured.get("trace_id") == "t"
+        assert captured.get("run_id") == "r"
+    finally:
+        RepairRegistry.clear()
+
+
 def test_policy_handler_bubble():
     block = DummyBlock("dummy")
     # BubblePolicy defaults to BUBBLE type

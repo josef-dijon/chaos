@@ -20,6 +20,8 @@ Planning artifacts used to structure and track work across features and migratio
 - [LLM Primitive + Response Unification Checklist](llm-primitive-response-unification-checklist.md)
 - [Tuning Policy Plan](tuning-policy-plan.md)
 - [Tuning Policy Checklist](tuning-policy-checklist.md)
+- [PydanticAI Migration Plan](pydanticai-migration-plan.md)
+- [PydanticAI Migration Checklist](pydanticai-migration-checklist.md)
 
 ## Complete
 - [Architecture Docs Migration Plan](architecture-docs-migration-plan-complete.md)
@@ -37,6 +39,8 @@ Planning artifacts used to structure and track work across features and migratio
 - [Storage Layout Plan](storage-layout-plan-complete.md)
 - [VCR Fixtures Plan](vcr-fixtures-plan-complete.md)
 - [LLM Primitive Layered Plan](llm-primitive-layered-plan-complete.md)
+- [LLM Primitive + Block Audit Plan](llm-primitive-block-audit-plan-complete.md)
+- [PydanticAI Pre-Migration Stabilization Plan](pydanticai-pre-migration-plan-complete.md)
 
 ## Roadmap
 - None yet.
