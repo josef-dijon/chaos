@@ -54,7 +54,7 @@ In Progress
 - [x] Reduce deep-copy usage for Requests and terminal Responses (prefer shallow copies + metadata-only updates).
 - [x] Cache/reuse LLM clients/models in `src/chaos/llm/llm_service.py` to avoid per-request construction.
 - [x] Cache/reuse agents in `_run_agent` where safe.
-- [ ] Replace `src/chaos/stats/json_block_stats_store.py` rewrite-per-attempt with append-only journaling or batched writes + rotation.
+- [x] Replace `src/chaos/stats/json_block_stats_store.py` rewrite-per-attempt with append-only journaling or batched writes + rotation.
 - [ ] Add an index (by block identity) to make `estimate` faster than scanning all records.
 - [x] Add bounded retention to prevent unbounded in-memory record growth.
 - [ ] Optionally replace `mean_std` with a streaming algorithm if needed for large samples.
