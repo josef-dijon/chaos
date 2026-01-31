@@ -70,7 +70,14 @@ See:
 
 ### 4. Policy Definition (Recovery)
 
-The `LLMPrimitive` provides a default recovery mapping for its failure categories. This mapping is exposed via `get_policy_stack(error_type)` and is intended to be stable across instances.
+The `LLMPrimitive` uses PydanticAI to manage both:
+
+- API error retries (transient provider failures)
+- schema validation retries (structured output validation failures)
+
+As a result, the caller (including composites) MUST NOT manage API retry or schema retry for LLMPrimitive failures via the block recovery policy system.
+
+The recovery policy system still applies to LLMPrimitive for local non-LLM errors (for example: invalid payload), but LLM-facing failures should generally bubble once PydanticAI has exhausted its internal retry budget.
 
 The architecture does not require the mapping to be "hardcoded" in the class body, but it does require that:
 - recovery selection is driven by `error_type`
@@ -79,8 +86,8 @@ The architecture does not require the mapping to be "hardcoded" in the class bod
 
 | Failure Category | Description | Default Strategy | Escalation Chain |
 | --- | --- | --- | --- |
-| `schema_error` | Output invalid JSON | `RetryPolicy` | `RepairPolicy (feedback) -> BubblePolicy` |
-| `rate_limit_error` | Provider 429 | `RetryPolicy (delayed)` | `RetryPolicy -> BubblePolicy` |
+| `schema_error` | Output does not validate against schema | Internal PydanticAI schema retry | `BubblePolicy` |
+| `rate_limit_error` | Provider 429 / transient rate limiting | Internal PydanticAI API retry | `BubblePolicy` |
 | `api_key_error` | Auth failed | `BubblePolicy` | `BubblePolicy` |
 | `context_length_error` | Prompt too long | `BubblePolicy` | `BubblePolicy` |
 
@@ -96,9 +103,11 @@ Implementation note:
 - Provider usage and cost data may be recorded or queried via a LiteLLM stats adapter. This adapter is an internal detail used to translate proxy aggregates into unified block estimates and execution records.
 
 ### 6. Example Flow (Schema Error)
-- Attempt 1 fails validation with `schema_error`.
-- Calling block applies `RepairPolicy` with `add_validation_feedback`.
-- Attempt 2 succeeds and returns a successful `Response`.
+- Block attempt 1 enters PydanticAI execution.
+- PydanticAI performs schema validation; initial output fails.
+- PydanticAI performs its internal schema retry/repair and re-queries the provider.
+- If PydanticAI succeeds within its budget, the block returns success.
+- If PydanticAI exhausts its budget, the block returns a failed `Response` and callers bubble (no additional block-level schema retry).
 
 ## References
 - [Core Architecture Index](index.md)

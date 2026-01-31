@@ -41,6 +41,10 @@ Definitions:
 - **Attempt index:** `metadata.attempt` increments on every re-execution triggered by recovery policies.
 - **Failed-attempt count (derived):** the number of failed `Response` objects returned at the block boundary within a run/trace.
 
+Internal retries:
+- A block MAY perform internal retries/repairs within a single block attempt (for example: LLMPrimitive via PydanticAI).
+- Internal retries SHOULD be surfaced via additional diagnostic fields (for example: an internal attempt counter) but MUST NOT be conflated with `metadata.attempt`.
+
 Guidance:
 - The attempt index is an execution control signal and MUST NOT be repurposed for analytics.
 - Failure counts should be computed from recorded attempt events (success=false) rather than from the attempt index.

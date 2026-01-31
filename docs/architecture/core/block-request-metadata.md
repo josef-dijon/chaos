@@ -88,6 +88,13 @@ Recommended minimum response keys:
 - `attempt`
 - `duration_ms`
 
+### Internal Attempt Metadata (Recommended)
+Some blocks may perform internal retries within a single block attempt.
+
+Guidance:
+- Internal retry counters MUST NOT reuse reserved keys like `attempt`.
+- Internal retry counters SHOULD be namespaced to avoid collisions (for example: `"llm.attempt"`, `"llm.retry_count"`).
+
 ### Serialization Guidance
 Some runtime-only values (for example: exception classes) may not serialize. If a failure must be persisted or transmitted across process boundaries, the failure MUST include a stable string classifier (for example: `reason`) and any required structured fields in `details`.
 

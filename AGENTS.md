@@ -46,6 +46,7 @@ All documentation must follow the project documentation standard:
 ### Git Practices
 - **Commit Style:** Use [Conventional Commits](https://www.conventionalcommits.org/) (e.g., `feat: ...`, `fix: ...`, `docs: ...`).
 - **Frequency:** Commit regularly to ensure work is saved and history is granular.
+- **Small Commits (Required):** Prefer very small, focused commits over large batches. Split work into logical, reviewable steps.
 
 ### Code Organization
 - **Granularity:** Break functions down into very small units of functionality. Small functions are easier to test and reason about.

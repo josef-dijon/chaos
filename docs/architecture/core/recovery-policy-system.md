@@ -21,6 +21,14 @@ Blocks map error types to a stack of `RecoveryPolicy` objects.
 - A block defines its recovery behavior by overriding `get_policy_stack(error_type)`.
 - When a child block returns a failed `Response`, the calling block retrieves the ordered policy stack from the child and attempts each strategy in sequence.
 
+Important:
+- The recovery policy system is for block-level recovery managed by the caller.
+- A block MAY implement internal retries/repairs as part of its own `execute` semantics.
+- Callers MUST NOT layer additional retries/repairs for failure categories that a block explicitly manages internally.
+
+Example:
+- `LLMPrimitive` uses PydanticAI to manage both API retries and schema validation retries internally. Callers must not apply `RetryPolicy`/`RepairPolicy` for those LLM-facing failures.
+
 Notes:
 - Recovery selection is driven by `error_type` (see [Block Responses](block-responses.md)).
 - Deterministic policy application and attempt accounting are defined in [Block Recovery Semantics](block-recovery-semantics.md).

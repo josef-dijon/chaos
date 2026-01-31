@@ -45,6 +45,17 @@ Recommended rules:
 - Attempt numbering is 1-based.
 - Attempt increments on each re-execution caused by retry or repair.
 
+#### Internal Retries (Block-Local)
+Some blocks may implement internal retries/repairs as part of their own execution semantics.
+
+Requirements:
+- The caller-level attempt index (`metadata.attempt`) tracks only caller-managed re-executions.
+- Internal retries MUST NOT cause the caller to increment `metadata.attempt`.
+- If a block performs internal retries, it SHOULD surface enough diagnostic information (for example: an internal attempt counter) to make failures debuggable, without requiring the caller to layer additional retry policies.
+
+Example:
+- `LLMPrimitive` uses PydanticAI to manage API retry and schema validation retry internally.
+
 See:
 - [Block Request and Metadata](block-request-metadata.md)
 
@@ -102,6 +113,9 @@ This is a normative reference algorithm.
 execute_with_recovery(child, initial_request):
   attempt = 1
   response = child.execute(with_attempt(initial_request, attempt))
+
+  # Note: child.execute(...) may include internal retries (block-local). Those
+  # internal retries do not affect the caller-managed attempt index.
 
   if response.success() is True:
     return response
