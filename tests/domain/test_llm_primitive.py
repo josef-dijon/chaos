@@ -74,7 +74,7 @@ def test_llm_primitive_happy_path():
     )
     response = block.execute(Request(payload={"prompt": "hello"}))
 
-    assert response.success() is True
+    assert response.success is True
     assert response.data == {"response": "hello"}
 
 
@@ -99,7 +99,7 @@ def test_llm_primitive_schema_error_policies():
 
     response = policy_block.execute(Request(payload={"prompt": "hello"}))
 
-    assert response.success() is False
+    assert response.success is False
     assert response.error_type == SchemaError
     assert response.reason == "schema_error"
 
@@ -144,7 +144,7 @@ def test_llm_primitive_auth_error_policies():
 
     response = policy_block.execute(Request(payload={"prompt": "hello"}))
 
-    assert response.success() is False
+    assert response.success is False
     assert response.error_type == ApiKeyError
     assert response.reason == "api_key_error"
 
@@ -166,7 +166,7 @@ def test_llm_primitive_rate_limit_mapping():
 
     response = block.execute(Request(payload={"prompt": "hello"}))
 
-    assert response.success() is False
+    assert response.success is False
     assert response.error_type == RateLimitError
     assert response.reason == "rate_limit_error"
 
@@ -189,7 +189,7 @@ def test_llm_primitive_includes_api_key():
 
     response = block.execute(Request(payload={"prompt": "hello"}))
 
-    assert response.success() is True
+    assert response.success is True
     assert captured["api_key"] == "test-key"
 
 
@@ -205,7 +205,7 @@ def test_llm_primitive_accepts_dict_content():
 
     response = block.execute(Request(payload={"prompt": "hello"}))
 
-    assert response.success() is True
+    assert response.success is True
     assert response.data == {"response": "hello"}
 
 
@@ -221,7 +221,7 @@ def test_llm_primitive_invalid_payload_returns_failure():
 
     response = block.execute(Request(payload={"unexpected": "value"}))
 
-    assert response.success() is False
+    assert response.success is False
     assert response.reason == "invalid_payload"
     assert response.error_type == SchemaError
 
@@ -243,7 +243,7 @@ def test_llm_primitive_context_length_mapping():
 
     response = block.execute(Request(payload={"prompt": "hello"}))
 
-    assert response.success() is False
+    assert response.success is False
     assert response.reason == "context_length_error"
     assert response.error_type == ContextLengthError
 
@@ -310,7 +310,7 @@ def test_llm_primitive_records_llm_usage_in_attempt_record() -> None:
     )
 
     response = block.execute(Request(payload={"prompt": "hello"}))
-    assert response.success() is True
+    assert response.success is True
     assert response.metadata["llm_calls"] == 3
     assert response.metadata["llm.retry_count"] == 2
 

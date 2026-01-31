@@ -245,7 +245,7 @@ class Block(ABC):
                 node_name=current_node_name,
             )
 
-            if response.success() is False:
+            if response.success is False:
                 # If a child fails (and wasn't recovered), the graph fails.
                 return response
 
@@ -341,7 +341,7 @@ class Block(ABC):
             source_request=None,
         )
 
-        if response.success() is True:
+        if response.success is True:
             return response
 
         error_type = response.error_type or Exception
@@ -376,7 +376,7 @@ class Block(ABC):
                     policy, node, last_child_request, current_failure
                 )
 
-            if current_failure.success() is True:
+            if current_failure.success is True:
                 return current_failure
             if policy.type == RecoveryType.BUBBLE:
                 return current_failure
@@ -458,7 +458,7 @@ class Block(ABC):
                 attempt=attempt,
                 source_request=last_child_request,
             )
-            if response.success() is True:
+            if response.success is True:
                 return attempt, last_child_request, response
             current_failure = response
 
@@ -695,7 +695,7 @@ class Block(ABC):
             version=identity.version,
             node_name=metadata.get("node_name"),
             attempt=int(metadata.get("attempt", 1)),
-            success=response.success(),
+            success=response.success,
             reason=response.reason,
             error_type=error_type_name,
             duration_ms=duration_ms,

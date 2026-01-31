@@ -31,7 +31,7 @@ def test_policy_handler_repair_success():
 
         response = PolicyHandler.handle(policy, block, Request(), failure)
 
-        assert response.success() is True
+        assert response.success is True
         assert response.data == "fixed"
     finally:
         RepairRegistry.clear()
@@ -44,7 +44,7 @@ def test_policy_handler_repair_not_found():
 
     response = PolicyHandler.handle(policy, block, Request(), failure)
 
-    assert response.success() is False
+    assert response.success is False
     assert response.reason == "repair_execution_failed"
     assert "not found" in str(response.details["error"])
 
@@ -56,7 +56,7 @@ def test_policy_handler_debug():
 
     response = PolicyHandler.handle(policy, block, Request(), failure)
 
-    assert response.success() is False
+    assert response.success is False
     assert response.reason == "debug_breakpoint_hit"
     assert response.details["original_error"]["reason"] == "oops"
 
@@ -97,7 +97,7 @@ def test_policy_handler_repair_merges_request_metadata_into_execution() -> None:
 
         response = PolicyHandler.handle(policy, block, request, failure)
 
-        assert response.success() is True
+        assert response.success is True
         assert captured.get("trace_id") == "t"
         assert captured.get("run_id") == "r"
     finally:
@@ -112,7 +112,7 @@ def test_policy_handler_bubble():
     failure = Response(success=False, reason="escalate me")
     response = PolicyHandler.handle(policy, block, Request(), failure)
 
-    assert response.success() is False
+    assert response.success is False
     assert response.reason == "escalate me"
 
     block = DummyBlock("dummy")
@@ -121,7 +121,7 @@ def test_policy_handler_bubble():
 
     response = PolicyHandler.handle(policy, block, Request(), failure)
 
-    assert response.success() is False
+    assert response.success is False
     assert response.reason == "debug_breakpoint_hit"
 
 
@@ -156,5 +156,5 @@ def test_policy_handler_unknown():
     failure = Response(success=False, reason="oops")
     response = PolicyHandler.handle(policy, block, Request(), failure)
 
-    assert response.success() is False
+    assert response.success is False
     assert response.reason and "unknown_policy_type" in response.reason

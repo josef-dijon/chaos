@@ -122,7 +122,7 @@ def test_composite_max_steps_exceeded():
     )
 
     response = composite.execute(Request())
-    assert response.success() is False
+    assert response.success is False
     assert response.reason == "max_steps_exceeded"
 
 
@@ -144,7 +144,7 @@ def test_composite_no_transition_when_no_branch_matches():
         )
 
         response = composite.execute(Request())
-        assert response.success() is False
+        assert response.success is False
         assert response.reason == "no_transition"
     finally:
         ConditionRegistry.clear()
@@ -163,7 +163,7 @@ def test_composite_condition_resolution_error_fails_fast():
     )
 
     response = composite.execute(Request())
-    assert response.success() is False
+    assert response.success is False
     assert response.reason == "condition_resolution_error"
 
 
@@ -175,7 +175,7 @@ def test_retry_forbidden_for_non_idempotent_side_effects():
     )
 
     response = composite.execute(Request())
-    assert response.success() is False
+    assert response.success is False
     assert response.reason == "unsafe_to_retry"
     assert response.details["failure_reason"] == "fail"
     assert child.attempts == 1
@@ -199,7 +199,7 @@ def test_condition_execution_error_returns_failure():
         )
 
         response = composite.execute(Request())
-        assert response.success() is False
+        assert response.success is False
         assert response.reason == "condition_execution_error"
         assert response.details["condition"] == "explode"
     finally:
@@ -218,7 +218,7 @@ def test_child_request_ids_unique_and_parent_metadata_overwrites():
     request = Request(metadata={"id": "root-id", "trace_id": "root-trace"})
     response = composite.execute(request)
 
-    assert response.success() is False
+    assert response.success is False
     assert response.metadata["id"] == "root-id"
     assert response.metadata["trace_id"] == "root-trace"
     assert len(child.request_ids) == 2
@@ -246,7 +246,7 @@ def test_retry_delay_is_applied(monkeypatch):
 
     response = composite.execute(Request())
 
-    assert response.success() is False
+    assert response.success is False
     assert delays == [0.25]
 
 
@@ -255,7 +255,7 @@ def test_build_sets_graph_and_executes():
 
     response = composite.execute(Request())
 
-    assert response.success() is True
+    assert response.success is True
     assert response.data == "ok"
     assert response.metadata["last_node"] == "child"
 
@@ -271,7 +271,7 @@ def test_invalid_transition_config_returns_failure():
 
     response = composite.execute(Request())
 
-    assert response.success() is False
+    assert response.success is False
     assert response.reason == "invalid_graph"
 
 
@@ -294,7 +294,7 @@ def test_repair_increments_attempt_and_uses_child_envelope() -> None:
 
         response = composite.execute(Request())
 
-        assert response.success() is True
+        assert response.success is True
         assert response.data == "fixed"
         assert child.seen_attempts == [1, 2]
         assert captured["attempt"] == 1

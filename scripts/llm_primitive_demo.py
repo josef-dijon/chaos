@@ -49,11 +49,11 @@ def run_demo(prompt: str, debug: bool) -> int:
 
     response = block.execute(Request(payload={"prompt": prompt}))
 
-    if response.success() is True:
+    if response.success is True:
         print("Success:")
         print(response.data)
         return 0
-    if response.success() is False:
+    if response.success is False:
         print("Failure:")
         payload: Dict[str, Any] = {"reason": response.reason}
         if debug:

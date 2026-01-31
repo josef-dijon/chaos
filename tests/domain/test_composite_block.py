@@ -46,7 +46,7 @@ def test_composite_simple_execution():
     request = Request(payload={"foo": "bar"})
     response = composite.execute(request)
 
-    assert response.success() is True
+    assert response.success is True
     assert response.data == "Success"
     assert child.attempts == 1
     assert "trace_id" in response.metadata
@@ -65,7 +65,7 @@ def test_composite_retry_success():
 
     response = composite.execute(Request())
 
-    assert response.success() is True
+    assert response.success is True
     assert child.attempts == 3
 
 
@@ -80,7 +80,7 @@ def test_composite_retry_exhausted():
 
     response = composite.execute(Request())
 
-    assert response.success() is False
+    assert response.success is False
     assert child.attempts == 2
 
 
@@ -94,14 +94,14 @@ def test_composite_bubble():
 
     response = composite.execute(Request())
 
-    assert response.success() is False
+    assert response.success is False
     assert child.attempts == 1
 
 
 def test_composite_config_error():
     composite = CompositeBlockStub("composite", nodes={}, entry_point="missing_child")
     response = composite.execute(Request())
-    assert response.success() is False
+    assert response.success is False
     assert response.reason == "invalid_graph"
 
 
@@ -119,7 +119,7 @@ def test_composite_linear_flow():
 
     response = composite.execute(Request(payload={"val": 0}))
 
-    assert response.success() is True
+    assert response.success is True
     assert block_a.attempts == 1
     assert block_b.attempts == 1
     assert response.metadata["last_node"] == "B"
@@ -138,7 +138,7 @@ def test_composite_branching_flow():
     @ConditionRegistry.register("is_large")
     def check_large(response: Response) -> bool:
         return (
-            response.success() is True
+            response.success is True
             and isinstance(response.data, int)
             and response.data > 10
         )

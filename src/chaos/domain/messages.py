@@ -22,7 +22,7 @@ class Request(BaseModel):
 class Response(BaseModel):
     """Unified response object returned by blocks."""
 
-    ok: bool = Field(alias="success", description="Whether the execution succeeded")
+    success: bool = Field(description="Whether the execution succeeded")
     data: Optional[Any] = Field(
         default=None, description="Result value produced by the block"
     )
@@ -39,17 +39,12 @@ class Response(BaseModel):
     )
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
-    model_config = ConfigDict(arbitrary_types_allowed=True, populate_by_name=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def __init__(self, **data: Any):
         super().__init__(**data)
         if "id" not in self.metadata:
             self.metadata["id"] = str(uuid4())
-
-    def success(self) -> bool:
-        """Return True if the response represents success."""
-
-        return self.ok
 
 
 _REQUEST_ID_FACTORY: Callable[[], str] = lambda: str(uuid4())

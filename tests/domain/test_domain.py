@@ -39,7 +39,7 @@ def test_request_response_flow():
     req = Request(payload={"value": 42})
     resp = block.execute(req)
 
-    assert resp.success() is True
+    assert resp.success is True
     assert resp.data == 42
     assert resp.metadata["id"] is not None
 
@@ -82,7 +82,7 @@ def test_base_metadata_is_populated_on_request():
 
     resp = block.execute(Request())
 
-    assert resp.success() is True
+    assert resp.success is True
     assert isinstance(resp.data, dict)
     metadata = cast(Dict[str, Any], resp.data)
     assert metadata["trace_id"]

@@ -73,7 +73,7 @@ Draft
 - [x] Remove redundant `LLMPrimitive.get_policy_stack` override if it matches the base behavior.
 - [x] Rename `manager_id` to `execution_id` (or `correlation_id`) consistently across `LLMPrimitive`, `LLMRequest`, and metadata.
 - [x] Remove duplicated sources of truth for attempt/execution ids (single authoritative location).
-- [ ] Standardize on a single Response success field name (`success`) and remove aliasing (`ok`).
+- [x] Standardize on a single Response success field name (`success`) and remove aliasing (`ok`).
 - [x] Fix `_run_agent` system prompt typing and stop passing `()` for missing prompts.
 - [ ] Remove or implement request-aware estimation; if removing, update `src/chaos/stats/estimate_builder.py` signatures/docs and tests.
 - [ ] Replace free-form `side_effect_class` with an enum or Literal, validate at construction.
