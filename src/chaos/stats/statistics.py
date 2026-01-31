@@ -14,13 +14,22 @@ def mean_std(values: Iterable[float]) -> Tuple[float, float]:
         Tuple containing (mean, std deviation). Returns (0.0, 0.0) if empty.
     """
 
-    collected = list(values)
-    if not collected:
+    count = 0
+    mean_value = 0.0
+    m2 = 0.0
+
+    for value in values:
+        count += 1
+        delta = value - mean_value
+        mean_value += delta / count
+        delta2 = value - mean_value
+        m2 += delta * delta2
+
+    if count == 0:
         return 0.0, 0.0
-    mean_value = sum(collected) / len(collected)
-    if len(collected) == 1:
+    if count == 1:
         return mean_value, 0.0
-    variance = sum((value - mean_value) ** 2 for value in collected) / len(collected)
+    variance = m2 / count
     return mean_value, sqrt(variance)
 
 

@@ -57,7 +57,7 @@ In Progress
 - [x] Replace `src/chaos/stats/json_block_stats_store.py` rewrite-per-attempt with append-only journaling or batched writes + rotation.
 - [x] Add an index (by block identity) to make `estimate` faster than scanning all records.
 - [x] Add bounded retention to prevent unbounded in-memory record growth.
-- [ ] Optionally replace `mean_std` with a streaming algorithm if needed for large samples.
+- [x] Optionally replace `mean_std` with a streaming algorithm if needed for large samples.
 
 ### Dependency inversion & testability
 - [x] Make `src/chaos/stats/store_registry.py` default store lazy (no import-time Config/file I/O).
